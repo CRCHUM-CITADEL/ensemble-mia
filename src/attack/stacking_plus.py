@@ -1,7 +1,7 @@
 # Standard library
-# import sys
-#
-# sys.path.insert(0, "../../../../..")
+import sys
+
+sys.path.insert(0, "..")
 from pathlib import Path
 from typing import Tuple
 
@@ -14,9 +14,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 # Local
-from metrics.privacy.membership import AttackModel, Logan, TableGan, Detector
-import utils.external.gower.gower_dist as gower
-from mia_ensemble.src.utils import draw
+from clover.metrics.privacy.membership import AttackModel, Logan, TableGan, Detector
+import clover.utils.external.gower.gower_dist as gower
+from src.utils import draw
 
 
 def model(

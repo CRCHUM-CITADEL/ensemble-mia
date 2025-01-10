@@ -1,7 +1,7 @@
 # Standard library
-# import sys
-#
-# sys.path.insert(0, "../../../../..")
+import sys
+
+sys.path.insert(0, "..")
 from pathlib import Path
 from typing import Tuple
 
@@ -14,8 +14,8 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 
 # Local
-from metrics.privacy.membership import AttackModel, Logan, TableGan, Detector
-from mia_ensemble.src.utils import draw
+from clover.metrics.privacy.membership import AttackModel, Logan, TableGan, Detector
+from src.utils import draw
 
 
 def model(

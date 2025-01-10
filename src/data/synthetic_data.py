@@ -15,17 +15,19 @@ from pathlib import Path
 from optuna import samplers
 
 # Local
-from generators.synthpop_generator import SynthpopGenerator
-from generators.smote import SmoteGenerator
-from generators.dataSynthesizer import DataSynthesizerGenerator
-from generators.mst_generator import MSTGenerator
-from generators.ctgan_generator import CTGANGenerator
-from generators.tvae_generator import TVAEGenerator
-from generators.ctabgan_generator import CTABGANGenerator
-from generators.tabddpm_generator import TabDDPMGenerator
-from optimization.discrete_pso_search import DiscreteParticleSwarmOptimizationSearch
-from optimization.optuna_search import OptunaSearch
-from optimization.objective_function import (
+from clover.generators.synthpop_generator import SynthpopGenerator
+from clover.generators.smote import SmoteGenerator
+from clover.generators.dataSynthesizer import DataSynthesizerGenerator
+from clover.generators.mst_generator import MSTGenerator
+from clover.generators.ctgan_generator import CTGANGenerator
+from clover.generators.tvae_generator import TVAEGenerator
+from clover.generators.ctabgan_generator import CTABGANGenerator
+from clover.generators.findiff_generator import FinDiffGenerator
+from clover.optimization.discrete_pso_search import (
+    DiscreteParticleSwarmOptimizationSearch,
+)
+from clover.optimization.optuna_search import OptunaSearch
+from clover.optimization.objective_function import (
     distinguishability_hinge_loss,
     ratio_match_loss,
 )
@@ -95,6 +97,7 @@ def generate_synth_data(
             generator=SynthpopGenerator,  # the generator
             objective_function=compound_loss,
             cv_num_folds=0,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
             use_gpu=True,  # flag to use the gpu if there are available
             direction="min",  # the direction of optimization ("min" or "max")
             num_iter=5,  # the number of iterations to repeat the search
@@ -104,8 +107,51 @@ def generate_synth_data(
         optim_order.fit()
         optimal_vars_order = optim_order.best_params["variables_order"]
 
-        print("Best parameters:")
+        print("Best visiting order:")
         print(optim_order.best_params)
+
+        # Save best parameters
+        with open(
+            output_path
+            / generator
+            / "generator"
+            / save_folder
+            / f"{generator}_best_visiting_order.pkl",
+            "wb",
+        ) as file:
+            pickle.dump(optim_order.best_params, file)
+
+        # Optimize other hyperparameters
+        def params_to_explore_optuna(trial):
+            params = {
+                "min_samples_leaf": trial.suggest_int(
+                    name="min_samples_leaf", low=3, high=7, step=1, log=False
+                )
+            }
+            return params
+
+        sampler = samplers.RandomSampler()
+
+        optim_params = OptunaSearch(
+            df=df_real[optimal_vars_order],  # Optimal visiting order from PSO
+            metadata=metadata,
+            hyperparams=params_to_explore_optuna,
+            generator=SynthpopGenerator,
+            objective_function=compound_loss,
+            cv_num_folds=1,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
+            use_gpu=True,  # flag to use the gpu if there are available
+            sampler=sampler,
+            direction="minimize",  # the direction of optimization ("minimize" or "maximize")
+            num_iter=5,  # the number of iterations to repeat the search
+            verbose=0,  # whether to print the INFO logs (1) or not (0)
+        )
+
+        optim_params.fit()
+        optimal_parameters = optim_params.best_params
+
+        print("Best parameters:")
+        print(optimal_parameters)
 
         # Save best parameters
         with open(
@@ -116,7 +162,7 @@ def generate_synth_data(
             / f"{generator}_best_params.pkl",
             "wb",
         ) as file:
-            pickle.dump(optim_order.best_params, file)
+            pickle.dump(optimal_parameters, file)
 
         # Configure generator with best hyperparameters
         gen = SynthpopGenerator(
@@ -125,7 +171,8 @@ def generate_synth_data(
             random_state=seed,  # for reproducibility, can be set to None
             generator_filepath=None,  # to load an existing generator,
             variables_order=optimal_vars_order,  # optimal order
-            min_samples_leaf=5,  # TODO: also optimize min_samples_leaf
+            epsilon=None,
+            min_samples_leaf=optimal_parameters["min_samples_leaf"],
             max_depth=None,
         )
 
@@ -148,6 +195,7 @@ def generate_synth_data(
             generator=SmoteGenerator,  # the generator
             objective_function=compound_loss,
             cv_num_folds=1,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
             use_gpu=True,  # flag to use the gpu if there are available
             sampler=sampler,
             direction="minimize",  # the direction of optimization ("minimize" or "maximize")
@@ -177,6 +225,7 @@ def generate_synth_data(
             metadata=metadata,
             random_state=seed,  # for reproducibility, can be set to None
             generator_filepath=None,  # to load an existing generator,
+            epsilon=None,
             **optimal_parameters,
         )
 
@@ -199,6 +248,7 @@ def generate_synth_data(
             generator=DataSynthesizerGenerator,  # the generator
             objective_function=compound_loss,
             cv_num_folds=1,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
             use_gpu=True,  # flag to use the gpu if there are available
             sampler=sampler,
             direction="minimize",  # the direction of optimization ("minimize" or "maximize")
@@ -206,7 +256,10 @@ def generate_synth_data(
             verbose=0,  # whether to print the INFO logs (1) or not (0)
         )
 
-        optim_params.fit()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            optim_params.fit()
+
         optimal_parameters = optim_params.best_params
 
         print("Best parameters:")
@@ -229,7 +282,8 @@ def generate_synth_data(
             random_state=seed,  # for reproducibility, can be set to None
             generator_filepath=None,  # to load an existing generator
             candidate_keys=None,  # the identifiers
-            epsilon=0,  # for the differential privacy, set to 0 (default=0) to turn DP off
+            epsilon=None,
+            preprocess_metadata=None,
             **optimal_parameters,
         )
 
@@ -242,6 +296,7 @@ def generate_synth_data(
             generator_filepath=None,  # to load an existing generator
             epsilon=1e5,  # the privacy budget of the differential privacy
             delta=0.9999,  # the failure probability of the differential privacy, 1 means non privacy, set to 0.9999 to prevent returning error
+            preprocess_metadata=None,
         )
 
     elif generator == "ctgan":
@@ -254,8 +309,8 @@ def generate_synth_data(
                 "epochs": trial.suggest_int(
                     name="epochs", low=100, high=500, step=100, log=False
                 ),
-                "batch_size": trial.suggest_int(
-                    name="batch_size", low=50, high=100, step=50, log=False
+                "batch_size": trial.suggest_categorical(
+                    "batch_size", [64, 128, 256, 512]
                 ),
             }
             return params
@@ -269,6 +324,7 @@ def generate_synth_data(
             generator=CTGANGenerator,  # the generator
             objective_function=compound_loss,
             cv_num_folds=1,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
             use_gpu=True,  # flag to use the gpu if there are available
             sampler=sampler,
             direction="minimize",  # the direction of optimization ("minimize" or "maximize")
@@ -276,7 +332,10 @@ def generate_synth_data(
             verbose=0,  # whether to print the INFO logs (1) or not (0)
         )
 
-        optim_params.fit()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            optim_params.fit()
+
         optimal_parameters = optim_params.best_params
 
         print("Best parameters:")
@@ -300,7 +359,8 @@ def generate_synth_data(
             generator_filepath=None,  # to load an existing generator
             epsilon=None,  # Turn DP off, which is the default setting
             delta=None,
-            max_grad_norm=1,
+            max_grad_norm=None,
+            preprocess_metadata=None,
             verbose=0,
             **optimal_parameters,
         )
@@ -312,8 +372,8 @@ def generate_synth_data(
                 "epochs": trial.suggest_int(
                     name="epochs", low=100, high=500, step=100, log=False
                 ),
-                "batch_size": trial.suggest_int(
-                    name="batch_size", low=50, high=200, step=50, log=False
+                "batch_size": trial.suggest_categorical(
+                    "batch_size", [64, 128, 256, 512]
                 ),
             }
             return params
@@ -327,6 +387,7 @@ def generate_synth_data(
             generator=TVAEGenerator,  # the generator
             objective_function=compound_loss,
             cv_num_folds=1,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
             use_gpu=True,  # flag to use the gpu if there are available
             sampler=sampler,
             direction="minimize",  # the direction of optimization ("minimize" or "maximize")
@@ -334,7 +395,10 @@ def generate_synth_data(
             verbose=0,  # whether to print the INFO logs (1) or not (0)
         )
 
-        optim_params.fit()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            optim_params.fit()
+
         optimal_parameters = optim_params.best_params
 
         print("Best parameters:")
@@ -358,10 +422,11 @@ def generate_synth_data(
             generator_filepath=None,  # to load an existing generator
             compress_dims=(249, 249),  # the size of the hidden layers in the encoder
             decompress_dims=(249, 249),  # the size of the hidden layers in the decoder
+            max_physical_batch_size=125,
             epsilon=None,  # Turn DP off
             delta=None,
-            max_grad_norm=1,
-            max_physical_batch_size=126,
+            max_grad_norm=None,
+            preprocess_metadata=None,
             **optimal_parameters,
         )
 
@@ -372,8 +437,8 @@ def generate_synth_data(
                 "epochs": trial.suggest_int(
                     name="epochs", low=100, high=500, step=100, log=False
                 ),
-                "batch_size": trial.suggest_int(
-                    name="batch_size", low=50, high=200, step=50, log=False
+                "batch_size": trial.suggest_categorical(
+                    "batch_size", [64, 128, 256, 512]
                 ),
             }
             return params
@@ -387,6 +452,7 @@ def generate_synth_data(
             generator=CTABGANGenerator,  # the generator
             objective_function=compound_loss,
             cv_num_folds=1,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
             use_gpu=True,  # flag to use the gpu if there are available
             sampler=sampler,
             direction="minimize",  # the direction of optimization ("minimize" or "maximize")
@@ -394,7 +460,10 @@ def generate_synth_data(
             verbose=0,  # whether to print the INFO logs (1) or not (0)
         )
 
-        optim_params.fit()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            optim_params.fit()
+
         optimal_parameters = optim_params.best_params
 
         print("Best parameters:")
@@ -428,22 +497,25 @@ def generate_synth_data(
             random_dim=100,  # dimension of the noise vector fed to the generator
             num_channels=64,  # number of channels in the convolutional layers of both the generator and the discriminator
             l2scale=1e-5,  # rate of weight decay used in the optimizer of the generator, discriminator and auxiliary classifier
+            epsilon=None,
+            delta=None,
+            max_grad_norm=None,
+            preprocess_metadata=None,
             **optimal_parameters,
         )
 
-    elif generator == "tabDDPM":
+    elif generator == "findiff":
 
         def params_to_explore_optuna(trial):
             params = {
                 "learning_rate": trial.suggest_categorical(
-                    "learning_rate", [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]
+                    "learning_rate", [1e-2, 1e-3, 1e-4]
                 ),
-                "batch_size": trial.suggest_categorical("batch_size", [64, 128, 256]),
-                "num_timesteps": trial.suggest_int(
-                    name="num_timesteps", low=50, high=150, step=10, log=False
+                "batch_size": trial.suggest_categorical(
+                    "batch_size", [64, 128, 256, 512]
                 ),
-                "num_iter": trial.suggest_int(
-                    name="num_iter", low=100, high=2000, step=100, log=False
+                "epochs": trial.suggest_int(
+                    name="epochs", low=100, high=500, step=100, log=False
                 ),
             }
             return params
@@ -454,9 +526,10 @@ def generate_synth_data(
             df=df_real,
             metadata=metadata,
             hyperparams=params_to_explore_optuna,
-            generator=TabDDPMGenerator,  # the generator
+            generator=FinDiffGenerator,  # the generator
             objective_function=compound_loss,
             cv_num_folds=1,  # the number of folds for cross-validation (0 or 1 to deactivate)
+            random_state=None,
             use_gpu=True,  # flag to use the gpu if there are available
             sampler=sampler,
             direction="minimize",  # the direction of optimization ("minimize" or "maximize")
@@ -481,12 +554,22 @@ def generate_synth_data(
         ) as file:
             pickle.dump(optimal_parameters, file)
 
-        gen = TabDDPMGenerator(
+        gen = FinDiffGenerator(
             df=df_real,
             metadata=metadata,
             random_state=seed,  # for reproducibility, can be set to None
             generator_filepath=None,  # to load an existing generator
-            layers=None,  # the width of the MLP layers
+            diffusion_steps=500,  # the diffusion timesteps for the forward diffusion process
+            mpl_layers=[1024, 1024, 1024, 1024],  # the width of the MLP layers
+            activation="lrelu",  # the activation fuction
+            dim_t=64,  # dimensionality of the intermediate layer for connecting the embeddings
+            cat_emb_dim=2,  # dimension of categorical embeddings
+            diff_beta_start_end=[1e-4, 0.02],  # diffusion start and end betas
+            scheduler="linear",  # diffusion scheduler
+            epsilon=None,
+            delta=None,
+            max_grad_norm=None,
+            preprocess_metadata=None,
             **optimal_parameters,
         )
 
@@ -495,9 +578,12 @@ def generate_synth_data(
 
     # Fit the generator
     gen.preprocess()
-    gen.fit(
-        save_path=output_path / generator / "generator" / save_folder
-    )  # the path should exist
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        gen.fit(
+            save_path=output_path / generator / "generator" / save_folder
+        )  # the path should exist
 
     # Generate synthetic data
     synth_data = []

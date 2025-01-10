@@ -1,7 +1,7 @@
 # Standard library
-# import sys
-#
-# sys.path.insert(0, "../../../../..")
+import sys
+
+sys.path.insert(0, "..")
 from pathlib import Path
 from typing import Tuple
 
@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 
 # Local
-from metrics.privacy.membership import AttackModel, TableGan
-from mia_ensemble.src.utils import draw
+from clover.metrics.privacy.membership import AttackModel, TableGan
+from src.utils import draw
 
 
 def prepare_data(

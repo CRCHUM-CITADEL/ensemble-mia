@@ -1,16 +1,15 @@
 # Standard library
-import sys
-
-sys.path.insert(0, "../../")
-
 import argparse
+import os
+from pathlib import Path
+from typing import Union
 
 # Local
-from metrics.utility.report import UtilityReport
-import mia_ensemble.src.data.real_data as real_data
-import mia_ensemble.src.data.synthetic_data as synthetic_data
+from clover.metrics.utility.report import UtilityReport
+import data.real_data as real_data
+import data.synthetic_data as synthetic_data
 
-from mia_ensemble.src.attack import (
+from attack import (
     GAN_Leaks,
     Monte_Carlo,
     LOGAN,
@@ -23,11 +22,39 @@ from mia_ensemble.src.attack import (
     blending,
     blending_plus,
 )
-from mia_ensemble.src import config
-from mia_ensemble.src.utils import draw
+import config
+from utils import draw
+
+
+def create_directory(path: Union[Path, str]) -> None:
+    """
+    Create directory if it does not exist
+
+    :param path: the directory to be created
+    :return: None
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def main(generator, iteration) -> None:
+    ###############################
+    # Directories creation
+    ###############################
+    root_dir = config.OUTPUT_PATH / generator
+    data_dir = root_dir / "data"
+    gen_dir = root_dir / "generator"
+    for dir_ in [
+        data_dir / "real",
+        data_dir / "1st_generation",
+        data_dir / "2nd_generation",
+        gen_dir / "1st_generation",
+        gen_dir / "2nd_generation",
+        root_dir / "plot",
+        root_dir / "report",
+    ]:
+        create_directory(dir_)
+
     ###############################
     # Data preparation
     ###############################
@@ -415,7 +442,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run membership inference attack")
     parser.add_argument(
         "--generator",
-        default="ctgan",
+        default="findiff",
         type=str,
         help="Synthetic data generator",
     )
@@ -424,7 +451,7 @@ if __name__ == "__main__":
         "--iteration",
         default=10,
         type=int,
-        help="Times to train model",
+        help="Times of repetition for each attack",
     )
 
     args = parser.parse_args()
