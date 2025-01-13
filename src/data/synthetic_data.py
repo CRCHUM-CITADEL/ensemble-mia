@@ -509,10 +509,11 @@ def generate_synth_data(
         def params_to_explore_optuna(trial):
             params = {
                 "learning_rate": trial.suggest_categorical(
-                    "learning_rate", [1e-2, 1e-3, 1e-4]
+                    "learning_rate", [1e-3, 1e-4]
                 ),
                 "batch_size": trial.suggest_categorical(
-                    "batch_size", [64, 128, 256, 512]
+                    "batch_size",
+                    [64, 128, 256],
                 ),
                 "epochs": trial.suggest_int(
                     name="epochs", low=100, high=500, step=100, log=False
