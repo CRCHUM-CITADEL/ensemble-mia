@@ -226,7 +226,7 @@ def main(generator, iteration) -> None:
     )
 
     # LOGAN
-    precision_top1_logan, precision_top50_logan = LOGAN.model(
+    _, precision_top1_logan, precision_top50_logan = LOGAN.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,
@@ -242,7 +242,7 @@ def main(generator, iteration) -> None:
     )
 
     # TableGAN
-    precision_top1_tablegan, precision_top50_tablegan = TableGAN.model(
+    _, precision_top1_tablegan, precision_top50_tablegan = TableGAN.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,
@@ -260,7 +260,7 @@ def main(generator, iteration) -> None:
     )
 
     # Detector
-    precision_top1_detector, precision_top50_detector = Detector.model(
+    _, precision_top1_detector, precision_top50_detector = Detector.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,
@@ -276,7 +276,7 @@ def main(generator, iteration) -> None:
     )
 
     # Soft voting
-    precision_top1_voting, precision_top50_voting = soft_voting.model(
+    _, precision_top1_voting, precision_top50_voting = soft_voting.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,
@@ -298,7 +298,7 @@ def main(generator, iteration) -> None:
     )
 
     # Stacking
-    precision_top1_stacking, precision_top50_stacking = stacking.model(
+    _, precision_top1_stacking, precision_top50_stacking = stacking.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,
@@ -322,7 +322,11 @@ def main(generator, iteration) -> None:
     )
 
     # Stacking+
-    precision_top1_stacking_plus, precision_top50_stacking_plus = stacking_plus.model(
+    (
+        _,
+        precision_top1_stacking_plus,
+        precision_top50_stacking_plus,
+    ) = stacking_plus.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,
@@ -346,7 +350,7 @@ def main(generator, iteration) -> None:
     )
 
     # Blending
-    precision_top1_blending, precision_top50_blending = blending.model(
+    _, precision_top1_blending, precision_top50_blending = blending.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,
@@ -370,7 +374,11 @@ def main(generator, iteration) -> None:
     )
 
     # Blending+
-    precision_top1_blending_plus, precision_top50_blending_plus = blending_plus.model(
+    (
+        _,
+        precision_top1_blending_plus,
+        precision_top50_blending_plus,
+    ) = blending_plus.model(
         df_real_train=df_real_train,
         df_synth_train=df_synth_train,
         df_synth_test=df_synth_test,

@@ -107,7 +107,7 @@ def model(
     iteration: int,
     save_path: Path,
     seed: int,
-) -> Tuple[list, list]:
+) -> Tuple[list, list, list]:
     """Membership inference attack with TableGAN
 
     :param df_real_train: the real train data
@@ -125,7 +125,7 @@ def model(
     :param save_path: the path to save the plot
     :param seed: for reproduction
 
-    :return: top 1% precision and top 50% precision of the predictions
+    :return: the predicted probability, top 1% precision and top 50% precision of the predictions
     """
 
     tablegan = TableGan(
@@ -134,6 +134,7 @@ def model(
         use_gpu=True,
     )
 
+    pred_proba = []
     precision_top1_tablegan = []
     precision_top50_tablegan = []
 
@@ -160,6 +161,7 @@ def model(
             n=50, y_true=y_test, y_pred_proba=y_pred_proba
         )
 
+        pred_proba.append(y_pred_proba)
         precision_top1_tablegan.append(precision_top_1)
         precision_top50_tablegan.append(precision_top_50)
 
@@ -176,4 +178,4 @@ def model(
             seed=seed,
         )
 
-    return precision_top1_tablegan, precision_top50_tablegan
+    return pred_proba, precision_top1_tablegan, precision_top50_tablegan
