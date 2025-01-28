@@ -8,7 +8,8 @@
 
 1.Edit the `config.py` file to configure the paths, metadata etc.
 
-2.**Training** stage: train the meta classifier of the ensemble models with data in **train** folder. 
+2.**Training** stage: train the meta classifier of the ensemble models with the real data in **train** folder 
+(along with the synthetic data generated based on the real data) and save the trained meta classifiers. 
 See `1.real_data_processing.ipynb` for how to collect and split real data.
 
 ```
@@ -47,13 +48,15 @@ python infer.py \
 ## Requirements
 
 1.Install synthetic generation package clover with:
+
 ```bash
 poetry install
 ````
 
 2.Generate synthetic data for **training**, **evaluation** and **inference** stages. 
-The synthetic data generated for **evaluation** and **inference** should be placed in the same folder 
+The synthetic data generated for **evaluation** and **inference** stages should be placed in the same folder 
 as the challenge data. The input data folder should have the following structure:
+
 ```
 └── input_folder
     ├── tabddpm_black_box
