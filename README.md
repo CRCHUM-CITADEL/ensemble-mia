@@ -70,14 +70,12 @@ as the challenge data. The input data folder should have the following structure
     │   │       └── synth_test.csv
     │   │       └── synth_2nd.csv    
     │   │       └── challenge_with_id.csv
-    │   │       └── challenge_label.csv 
     │   └── final
     │   │   └── tabddpm_#
     │   │       └── synth_train.csv
     │   │       └── synth_test.csv
     │   │       └── synth_2nd.csv
     │   │       └── challenge_with_id.csv
-    │   │       └── challenge_label.csv 
     └── tabsyn_black_box
         ... 
 ```
