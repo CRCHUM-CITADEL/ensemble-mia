@@ -11,8 +11,7 @@ import numpy as np
 import pandas as pd
 
 # Local
-from clover.metrics.privacy.membership import AttackModel, Logan
-from src.utils import draw
+from clover.metrics.privacy.membership import Logan
 
 
 def prepare_data(
@@ -55,36 +54,25 @@ def prepare_data(
     return df_train_logan, y_train_logan
 
 
-def model(
-    df_real_train: pd.DataFrame,
-    df_synth_train: pd.DataFrame,
-    df_synth_test: pd.DataFrame,
+def fit_pred(
     df_train_logan: pd.DataFrame,
     y_train_logan: np.ndarray,
     df_test: pd.DataFrame,
-    y_test: np.ndarray,
     cont_cols: list,
     cat_cols: list,
     iteration: int,
-    save_path: Path,
-    seed: int,
-) -> Tuple[list, list, list]:
-    """Membership inference attack with LOGAN
+) -> list:
+    """Fit LOGAN and output the prediction on the test set
 
-    :param df_real_train: the real train data
-    :param df_synth_train: the 1st generation synthetic train data
-    :param df_synth_test: the 1st generation synthetic test data
     :param df_train_logan: the training data for LOGAN
     :param y_train_logan: the training label
-    :param df_test: the test data
-    :param y_test: the test label
+    :param df_test: the test data without label
     :param cont_cols: the name(s) of the continuous variable(s)
     :param cat_cols: the name(s) of the categorical variable(s)
     :param iteration: the number of time to train the model
-    :param save_path: the path to save the plot
-    :param seed: for reproduction
 
-    :return: the predicted probability, top 1% precision and top 50% precision of the predictions
+
+    :return: the predicted probabilities
     """
 
     logan = Logan(
@@ -93,9 +81,7 @@ def model(
         use_gpu=True,
     )
 
-    pred_proba = []
-    precision_top1_logan = []
-    precision_top50_logan = []
+    pred_proba_logan = []
 
     for i in range(iteration):
         pipe_logan = logan.fit(
@@ -106,29 +92,6 @@ def model(
         )
 
         y_pred_proba = pipe_logan.predict_proba(df_test)[:, 1]
+        pred_proba_logan.append(y_pred_proba)
 
-        precision_top_1 = AttackModel.precision_top_n(
-            n=1, y_true=y_test, y_pred_proba=y_pred_proba
-        )
-        precision_top_50 = AttackModel.precision_top_n(
-            n=50, y_true=y_test, y_pred_proba=y_pred_proba
-        )
-
-        pred_proba.append(y_pred_proba)
-        precision_top1_logan.append(precision_top_1)
-        precision_top50_logan.append(precision_top_50)
-
-        draw.prediction_vis(
-            df_real_train=df_real_train,
-            df_synth_train=df_synth_train,
-            df_synth_test=df_synth_test,
-            df_test=df_test,
-            y_test=y_test,
-            y_pred_proba=y_pred_proba,
-            cont_col=cont_cols,
-            n=1,
-            save_path=save_path / f"logan_output_iter{i}.jpg",
-            seed=seed,
-        )
-
-    return pred_proba, precision_top1_logan, precision_top50_logan
+    return pred_proba_logan
