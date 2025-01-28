@@ -91,7 +91,7 @@ def plot_pred(
             edgecolors="none",
             alpha=1,
             s=2,
-            label=f"Test data (# of observation: {len(df_test)})",
+            label=f"Non-members (# of observation: {len(df_test)-len(df_test_member)})",
         )
 
         plt.scatter(
@@ -105,7 +105,7 @@ def plot_pred(
             edgecolors="none",
             alpha=1,
             s=2,
-            label=f"True members (# of observation: {len(df_test_member)})",
+            label=f"Members (# of observation: {len(df_test_member)})",
         )
 
         plt.scatter(
@@ -196,7 +196,7 @@ def plot_pred(
             color="green",
             edgecolors="none",
             alpha=1,
-            s=8,
+            s=2,
             marker="*",
             label=f"Predicted members (top {n}%; # of prediction: {len(df_test_top_n)})",
         )
