@@ -338,7 +338,7 @@ def main(
     )
     save_pickle(
         obj=meta_classifier_blending,
-        folderpath=output_path / "blending" / "plot_pred.jpg",
+        folderpath=output_path / "blending",
         filename="meta_classifier",
         date=False,
     )
