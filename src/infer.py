@@ -18,7 +18,7 @@ from attack import (
     blending_plus,
 )
 import config
-from utils import draw
+from utils import draw, standard
 
 
 def main(
@@ -128,6 +128,7 @@ def main(
             / dataset
             / f"{gen_name}_{data_id}"
         )
+        standard.create_directory(current_logan_dir)
 
         np.savetxt(
             current_logan_dir / "prediction.csv",
@@ -165,6 +166,8 @@ def main(
             / dataset
             / f"{gen_name}_{data_id}"
         )
+        standard.create_directory(current_tablegan_dir)
+
         np.savetxt(
             current_tablegan_dir / "prediction.csv",
             pred_proba_tablegan,
@@ -203,6 +206,8 @@ def main(
             / dataset
             / f"{gen_name}_{data_id}"
         )
+        standard.create_directory(current_soft_voting_dir)
+
         np.savetxt(
             current_soft_voting_dir / "prediction.csv",
             pred_proba_soft_voting,
@@ -244,6 +249,8 @@ def main(
             / dataset
             / f"{gen_name}_{data_id}"
         )
+        standard.create_directory(current_stacking_dir)
+
         np.savetxt(
             current_stacking_dir / "prediction.csv",
             pred_proba_stacking,
@@ -287,6 +294,8 @@ def main(
             / dataset
             / f"{gen_name}_{data_id}"
         )
+        standard.create_directory(current_stacking_plus_dir)
+
         np.savetxt(
             current_stacking_plus_dir / "prediction.csv",
             pred_proba_stacking_plus,
@@ -328,6 +337,8 @@ def main(
             / dataset
             / f"{gen_name}_{data_id}"
         )
+        standard.create_directory(current_blending_dir)
+
         np.savetxt(
             current_blending_dir / "prediction.csv",
             pred_proba_blending,
@@ -371,6 +382,8 @@ def main(
             / dataset
             / f"{gen_name}_{data_id}"
         )
+        standard.create_directory(current_blending_plus_dir)
+
         np.savetxt(
             current_blending_plus_dir / "prediction.csv",
             pred_proba_blending_plus,
