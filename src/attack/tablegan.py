@@ -17,7 +17,6 @@ def prepare_data(
     df_synth_test: pd.DataFrame,
     df_synth_2nd: pd.DataFrame,
     size: int,
-    cat_cols: list,
     seed: int,
 ) -> Tuple[pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray]:
     """Prepare training data for TableGAN
@@ -31,7 +30,6 @@ def prepare_data(
     :param df_synth_2nd: the 2nd generation synthetic data
     :param size: the number of the samples in the 1st generation synthetic train data
         to be used to train the classifier
-    :param cat_cols: the name(s) of the categorical variable(s)
     :param seed: for reproduction
 
     :return: the features and label to train the discriminator and classifier
@@ -54,10 +52,6 @@ def prepare_data(
         ignore_index=True,
     )
 
-    df_train_tablegan_discriminator[cat_cols] = df_train_tablegan_discriminator[
-        cat_cols
-    ].astype("object")
-
     # Label 1 for 1st generation synthetic data and 0 for 2nd generation synthetic data.
     y_train_tablegan_discriminator = np.array(
         [1] * len(df_synth_train_tablegan_discriminator) + [0] * len(df_synth_2nd)
@@ -73,10 +67,6 @@ def prepare_data(
         axis=0,
         ignore_index=True,
     )
-
-    df_train_tablegan_classifier[cat_cols] = df_train_tablegan_classifier[
-        cat_cols
-    ].astype("object")
 
     # Label 1 for 1st gen synthetic data used to generate 2nd generation synthetic data and 0 for control.
     y_train_tablegan_classifier = np.array(

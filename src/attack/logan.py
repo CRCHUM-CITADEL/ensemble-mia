@@ -2,7 +2,6 @@
 import sys
 
 sys.path.insert(0, "..")
-from pathlib import Path
 from typing import Tuple
 
 
@@ -18,7 +17,6 @@ def prepare_data(
     df_synth_train: pd.DataFrame,
     df_synth_2nd: pd.DataFrame,
     size: int,
-    cat_cols: list,
     seed: int,
 ) -> Tuple[pd.DataFrame, np.ndarray]:
     """Prepare training data for LOGAN
@@ -26,7 +24,6 @@ def prepare_data(
     :param df_synth_train: the 1st generation synthetic train data
     :param df_synth_2nd: the 2nd generation synthetic data
     :param size: the number of the samples in the 1st generation synthetic train data to be used
-    :param cat_cols: the name(s) of the categorical variable(s)
     :param seed: for reproduction
 
     :return: the features and label to train LOGAN
@@ -44,8 +41,6 @@ def prepare_data(
         axis=0,
         ignore_index=True,
     )
-
-    df_train_logan[cat_cols] = df_train_logan[cat_cols].astype("object")
 
     # Label 1 for 1st generation synthetic data used to generate 2nd generation synthetic data and
     # 0 for 2nd generation synthetic data
