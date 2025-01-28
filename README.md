@@ -53,7 +53,7 @@ poetry install
 
 2.Generate synthetic data for **training**, **evaluation** and **inference** stages. 
 The synthetic data generated for **evaluation** and **inference** should be placed in the same folder 
-as the challenge data. The input data folder should have the follow structure:
+as the challenge data. The input data folder should have the following structure:
 ```
 └── input_folder
     ├── tabddpm_black_box
