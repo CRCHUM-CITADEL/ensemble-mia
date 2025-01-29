@@ -65,10 +65,7 @@ def main(
 
     # LOGAN
     df_train_logan, y_train_logan = logan.prepare_data(
-        df_synth_train=df_synth_train,
-        df_synth_2nd=df_synth_2nd,
-        size=len(df_synth_2nd),
-        seed=config.seed,
+        df_synth_train=df_synth_train, df_synth_2nd=df_synth_2nd
     )
 
     # TableGAN

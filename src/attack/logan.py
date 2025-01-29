@@ -16,26 +16,18 @@ from clover.metrics.privacy.membership import Logan
 def prepare_data(
     df_synth_train: pd.DataFrame,
     df_synth_2nd: pd.DataFrame,
-    size: int,
-    seed: int,
 ) -> Tuple[pd.DataFrame, np.ndarray]:
     """Prepare training data for LOGAN
 
     :param df_synth_train: the 1st generation synthetic train data
     :param df_synth_2nd: the 2nd generation synthetic data
-    :param size: the number of the samples in the 1st generation synthetic train data to be used
-    :param seed: for reproduction
 
     :return: the features and label to train LOGAN
     """
 
-    df_synth_train_sample = df_synth_train.sample(
-        n=size, replace=False, ignore_index=True, random_state=seed
-    )
-
     df_train_logan = pd.concat(
         [
-            df_synth_train_sample,
+            df_synth_train,
             df_synth_2nd,
         ],
         axis=0,
@@ -44,7 +36,7 @@ def prepare_data(
 
     # Label 1 for 1st generation synthetic data used to generate 2nd generation synthetic data and
     # 0 for 2nd generation synthetic data
-    y_train_logan = np.array([1] * len(df_synth_train_sample) + [0] * len(df_synth_2nd))
+    y_train_logan = np.array([1] * len(df_synth_train) + [0] * len(df_synth_2nd))
 
     return df_train_logan, y_train_logan
 
