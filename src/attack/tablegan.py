@@ -16,7 +16,8 @@ def prepare_data(
     df_synth_train: pd.DataFrame,
     df_synth_test: pd.DataFrame,
     df_synth_2nd: pd.DataFrame,
-    size: int,
+    size_1st_gen_cla: int,
+    size_2nd_gen_dis: int,
     seed: int,
 ) -> Tuple[pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray]:
     """Prepare training data for TableGAN
@@ -28,8 +29,10 @@ def prepare_data(
     :param df_synth_train: the 1st generation synthetic train data
     :param df_synth_test: the 1st generation synthetic test data
     :param df_synth_2nd: the 2nd generation synthetic data
-    :param size: the number of the samples in the 1st generation synthetic train data
+    :param size_1st_gen_cla: the number of the samples in the 1st generation synthetic train data
         to be used to train the classifier
+    :param size_2nd_gen_dis: the number of the samples in the 2nd generation synthetic data
+        to be used to train the discriminator
     :param seed: for reproduction
 
     :return: the features and label to train the discriminator and classifier
@@ -38,7 +41,7 @@ def prepare_data(
     # Split the 1st generation synthetic train set into 2 sets:
     # 1 used to train discriminator and another used to train final classifier
     df_synth_train_tablegan_classifier = df_synth_train.sample(
-        n=size, replace=False, ignore_index=False, random_state=seed
+        n=size_1st_gen_cla, replace=False, ignore_index=False, random_state=seed
     )
 
     df_synth_train_tablegan_discriminator = df_synth_train[
@@ -46,15 +49,19 @@ def prepare_data(
     ].reset_index(drop=True)
 
     # Construct train set to train the discriminator: 1st gen + 2nd gen synthetic sets
+    df_synth_2nd_tablegan_discriminator = df_synth_2nd.sample(
+        n=size_2nd_gen_dis, replace=False, ignore_index=True, random_state=seed
+    )
     df_train_tablegan_discriminator = pd.concat(
-        [df_synth_train_tablegan_discriminator, df_synth_2nd],
+        [df_synth_train_tablegan_discriminator, df_synth_2nd_tablegan_discriminator],
         axis=0,
         ignore_index=True,
     )
 
     # Label 1 for 1st generation synthetic data and 0 for 2nd generation synthetic data.
     y_train_tablegan_discriminator = np.array(
-        [1] * len(df_synth_train_tablegan_discriminator) + [0] * len(df_synth_2nd)
+        [1] * len(df_synth_train_tablegan_discriminator)
+        + [0] * len(df_synth_2nd_tablegan_discriminator)
     )
 
     # Construct the train set used to train the final classifier, which contains

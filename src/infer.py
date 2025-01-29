@@ -100,7 +100,8 @@ def main(
             df_synth_train=df_synth_train,
             df_synth_test=df_synth_test,
             df_synth_2nd=df_synth_2nd,
-            size=len(df_synth_test),
+            size_1st_gen_cla=len(df_synth_test),
+            size_2nd_gen_dis=len(df_synth_train) - len(df_synth_test),
             seed=config.seed,
         )
 
