@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from midst_models.single_table_TabSyn.src import preprocess
-from midst_models.single_table_TabSyn.src.tabsyn.model.vae import Decoder_model
+from .. import preprocess
+from .model.vae import Decoder_model
 
 
 def get_input_train(args):

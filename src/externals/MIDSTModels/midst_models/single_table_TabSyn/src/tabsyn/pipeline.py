@@ -8,17 +8,17 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
-from midst_models.single_table_TabSyn.src.tabsyn.model.modules import (
+from .model.modules import (
     MLPDiffusion,
     Model,
 )
-from midst_models.single_table_TabSyn.src.tabsyn.model.utils import sample
-from midst_models.single_table_TabSyn.src.tabsyn.model.vae import (
+from .model.utils import sample
+from .model.vae import (
     Decoder_model,
     Encoder_model,
     Model_VAE,
 )
-from midst_models.single_table_TabSyn.src.tabsyn.utils import (
+from .utils import (
     recover_data,
     split_num_cat_target,
 )

@@ -5,18 +5,18 @@ import warnings
 import numpy as np
 import torch
 
-from midst_models.single_table_TabSyn.src import load_config
-from midst_models.single_table_TabSyn.src.data import preprocess
-from midst_models.single_table_TabSyn.src.tabsyn.model.modules import (
+from ..src import load_config
+from ..src.data import preprocess
+from ..src.tabsyn.model.modules import (
     MLPDiffusion,
     Model,
 )
-from midst_models.single_table_TabSyn.src.tabsyn.tabsyn.model.vae import (
+from ..src.tabsyn.model.vae import (
     Decoder_model,
     Encoder_model,
     Model_VAE,
 )
-from midst_models.single_table_TabSyn.src.tabsyn.utils import (
+from ..src.tabsyn.utils import (
     recover_data,
     split_num_cat_target,
 )

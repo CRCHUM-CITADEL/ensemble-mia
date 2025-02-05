@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.optim
 from torch import Tensor
 
-from midst_models.single_table_TabSyn.src.tabsyn.model.utils import EDMLoss
+from .utils import EDMLoss
 
 ModuleType = Union[str, Callable[..., nn.Module]]
 

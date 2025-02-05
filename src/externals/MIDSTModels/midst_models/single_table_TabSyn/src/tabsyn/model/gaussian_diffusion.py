@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from midst_models.single_table_TabSyn.src.tabsyn.model.utils import EDMLoss
+from .utils import EDMLoss
 
 # ----------------------------------------------------------------------------
 # Loss function corresponding to the variance preserving (VP) formulation
