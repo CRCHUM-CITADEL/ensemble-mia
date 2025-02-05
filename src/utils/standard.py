@@ -2,6 +2,7 @@ import os
 import zipfile
 from pathlib import Path
 from typing import Union
+import pandas as pd
 
 
 def create_directory(path: Union[Path, str]) -> None:
@@ -13,6 +14,27 @@ def create_directory(path: Union[Path, str]) -> None:
     """
     if not os.path.exists(path):
         os.makedirs(path)
+
+
+def trans_type(df: pd.DataFrame, col_type: dict, decimal: int) -> pd.DataFrame:
+    """
+    Transform the column type of the dataframe
+
+    :param df: the dataframe to be transformed
+    :param col_type: a dictionary to specify the desired type for each column,
+        i.e., {"float": ["col1", "col2"], "int": ["col3", "col4"]}
+    :param decimal: decimal places to be preserved for all the float type
+    :return: the transformed dataframe
+    """
+    df_trans = df.copy()
+
+    for col in col_type["int"]:
+        df_trans[col] = df_trans[col].astype(int)
+
+    for col in col_type["float"]:
+        df_trans[col] = df_trans[col].astype(float).round(decimal)
+
+    return df_trans
 
 
 def zip_files(model_name: str, tasks: list, file_path: Union[str, Path]) -> None:
