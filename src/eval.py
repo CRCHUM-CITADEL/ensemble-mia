@@ -55,6 +55,9 @@ def main(
 
     # Load data for each shadow model
     for data_id in config.train_id:
+        print("-----------------------------")
+        print(f"Evaluating for {gen_name}_{data_id}")
+        print("-----------------------------")
         df_synth_train = pd.read_csv(
             input_dir / f"{gen_name}_{data_id}" / config.synth_train_file
         )

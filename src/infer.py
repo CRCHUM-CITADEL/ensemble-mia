@@ -58,6 +58,9 @@ def main(
         infer_id = config.final_id
 
     for data_id in infer_id:
+        print("-----------------------------")
+        print(f"Predicting for {gen_name}_{data_id}")
+        print("-----------------------------")
         df_synth_train = pd.read_csv(
             input_dir / f"{gen_name}_{data_id}" / config.synth_train_file
         )
