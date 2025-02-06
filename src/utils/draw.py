@@ -183,7 +183,7 @@ def plot_pred(
         plt.scatter(
             x=df_combined_trans.iloc[: len(df_test)][0],
             y=df_combined_trans.iloc[: len(df_test)][1],
-            color="brow",
+            color="brown",
             edgecolors="none",
             alpha=1,
             s=2,
