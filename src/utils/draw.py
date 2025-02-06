@@ -232,8 +232,6 @@ def compare_results(
         labels=method_names,
         showmeans=True,
     )
-    # ax.set(ylim=[0, 0.2])
-    ax.legend()
     ax.set_title(metric_name)
     plt.savefig(save_path, dpi=1200)
     plt.show(block=False)
