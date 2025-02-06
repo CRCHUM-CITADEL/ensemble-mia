@@ -313,7 +313,7 @@ def main(
             max_fpr=0.1,
         )
 
-        tpr_at_fpr_dict["Stacking+"].append(pred_proba_stacking_plus)
+        tpr_at_fpr_dict["Stacking+"].append(tpr_at_fpr_stacking_plus)
         print(
             f"Stacking+ TPR at FPR==10% for {gen_name}_{data_id}: {tpr_at_fpr_stacking_plus}"
         )
@@ -365,7 +365,9 @@ def main(
         )
 
         tpr_at_fpr_dict["Blending"].append(tpr_at_fpr_blending)
-        print(f"Blending TPR at FPR==10%: {tpr_at_fpr_blending}")
+        print(
+            f"Blending TPR at FPR==10% for {gen_name}_{data_id}: {tpr_at_fpr_blending}"
+        )
 
         standard.create_directory(output_dir / "blending" / f"{gen_name}_{data_id}")
         np.savetxt(
