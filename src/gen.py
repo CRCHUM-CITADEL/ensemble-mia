@@ -307,8 +307,8 @@ def main(generator: str, dataset: str, ref_data_path: str) -> None:
             )  # train_z dim: B x in_dim
 
             # Normalize embeddings
-            mean, std = train_z.mean(0), train_z.std(0)
-            latent_train_data = (train_z - mean) / std
+            mean = train_z.mean(0)
+            latent_train_data = (train_z - mean) / 2
 
             # Create data loader
             latent_train_loader = DataLoader(
