@@ -196,7 +196,7 @@ def main(generator: str, dataset: str, ref_data_path: str) -> None:
             synth_data_dir = output_dir / "synthetic_data"
             model_path = output_dir / "models " / "tabsyn"
 
-            # create the new folder if it doesn't exist
+            # Create the new folder if it doesn't exist
             for dir_ in [
                 info_dir,
                 raw_data_dir,
