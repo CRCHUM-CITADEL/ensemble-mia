@@ -9,9 +9,9 @@
 1.Edit the `config.py` file to configure the paths, metadata etc.
 
 2.**Training** stage: train the meta classifier of the ensemble models with the real data in **train** folder 
-(along with the synthetic data generated based on the real data) and save the trained meta classifiers. 
-See `1.real_data_processing.ipynb` for how to collect and split real data and `2.tabsyn_synth_gen_population.ipynb`
-for instructions on how to generate synthetic data with TabSyn.
+(along with the 1st and 2nd generation synthetic data generated based on the real data) 
+and save the trained meta classifiers. See `1.real_data_processing.ipynb` for how to collect and split real data 
+and `2.tabsyn_synth_gen_population.ipynb`for instructions on how to generate synthetic data with TabSyn.
 
 ```
 python train.py \
