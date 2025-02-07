@@ -10,7 +10,8 @@
 
 2.**Training** stage: train the meta classifier of the ensemble models with the real data in **train** folder 
 (along with the synthetic data generated based on the real data) and save the trained meta classifiers. 
-See `1.real_data_processing.ipynb` for how to collect and split real data.
+See `1.real_data_processing.ipynb` for how to collect and split real data and `2.tabsyn_synth_gen_population.ipynb`
+for instructions on how to generate synthetic data with TabSyn.
 
 ```
 python train.py \
@@ -53,9 +54,10 @@ python infer.py \
 poetry install
 ````
 
-2.Generate synthetic data for **training**, **evaluation** and **inference** stages. 
-See `gen.py` and `2.tabsyn_synth_gen_population.ipynb` for instructions on how to generate synthetic data.
-The synthetic data generated for **evaluation** and **inference** stages should be placed in the same folder 
+2.Generate a 2nd generation synthetic data for **training**, **evaluation** and **inference** stages. 
+The user can use `gen.py` to split the 1st generation synthetic data into training and test set and 
+generate 2nd generation synthetic data for each dataset. The synthetic data generated for 
+**evaluation** and **inference** stages should be placed in the same folder 
 as the challenge data. The input data folder should have the following structure:
 
 ```
