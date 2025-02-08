@@ -22,15 +22,16 @@ from utils import draw, standard, stats
 
 
 def main(
+    attack_type: str,
     meta_classifier_stacking_path: str,
     meta_classifier_stacking_plus_path: str,
     meta_classifier_blending_path: str,
     meta_classifier_blending_plus_path: str,
 ) -> None:
     # Input and output folders
-    gen_name = config.attack_type.split("_")[0]
-    input_dir = config.DATA_PATH / config.attack_type / "train"
-    output_dir = config.OUTPUT_PATH / "eval" / config.attack_type
+    gen_name = attack_type.split("_")[0]
+    input_dir = config.DATA_PATH / attack_type / "train"
+    output_dir = config.OUTPUT_PATH / "eval" / attack_type
 
     # Load meta classifier for ensemble models
     meta_classifier_stacking = load_pickle(Path(meta_classifier_stacking_path))
@@ -464,6 +465,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MIAs model evaluation")
 
     parser.add_argument(
+        "--attack_type",
+        default=None,
+        type=str,
+        help="Setting to attack, tabddpm_black_box or tabsyn_black_box",
+    )
+
+    parser.add_argument(
         "--meta_classifier_stacking_path",
         default=None,
         type=str,
@@ -493,6 +501,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(
+        attack_type=args.attack_type,
         meta_classifier_stacking_path=args.meta_classifier_stacking_path,
         meta_classifier_stacking_plus_path=args.meta_classifier_stacking_plus_path,
         meta_classifier_blending_path=args.meta_classifier_blending_path,

@@ -22,6 +22,7 @@ from utils import draw, standard
 
 
 def main(
+    attack_type: str,
     meta_classifier_stacking_path: str,
     meta_classifier_stacking_plus_path: str,
     meta_classifier_blending_path: str,
@@ -37,8 +38,8 @@ def main(
         raise ValueError("is_plot must be True or False")
 
     # Input and output folders
-    gen_name = config.attack_type.split("_")[0]
-    input_dir = config.DATA_PATH / config.attack_type / dataset
+    gen_name = attack_type.split("_")[0]
+    input_dir = config.DATA_PATH / attack_type / dataset
     output_dir = config.OUTPUT_PATH / "infer"
 
     # Load meta classifier for ensemble models
@@ -123,11 +124,7 @@ def main(
         )[0]
 
         current_logan_dir = (
-            output_dir
-            / "logan"
-            / config.attack_type
-            / dataset
-            / f"{gen_name}_{data_id}"
+            output_dir / "logan" / attack_type / dataset / f"{gen_name}_{data_id}"
         )
         standard.create_directory(current_logan_dir)
 
@@ -161,11 +158,7 @@ def main(
         )[0]
 
         current_tablegan_dir = (
-            output_dir
-            / "tablegan"
-            / config.attack_type
-            / dataset
-            / f"{gen_name}_{data_id}"
+            output_dir / "tablegan" / attack_type / dataset / f"{gen_name}_{data_id}"
         )
         standard.create_directory(current_tablegan_dir)
 
@@ -201,11 +194,7 @@ def main(
         )[0]
 
         current_soft_voting_dir = (
-            output_dir
-            / "soft_voting"
-            / config.attack_type
-            / dataset
-            / f"{gen_name}_{data_id}"
+            output_dir / "soft_voting" / attack_type / dataset / f"{gen_name}_{data_id}"
         )
         standard.create_directory(current_soft_voting_dir)
 
@@ -244,11 +233,7 @@ def main(
         pred_proba_stacking = output_stacking["pred_proba"][0]
 
         current_stacking_dir = (
-            output_dir
-            / "stacking"
-            / config.attack_type
-            / dataset
-            / f"{gen_name}_{data_id}"
+            output_dir / "stacking" / attack_type / dataset / f"{gen_name}_{data_id}"
         )
         standard.create_directory(current_stacking_dir)
 
@@ -291,7 +276,7 @@ def main(
         current_stacking_plus_dir = (
             output_dir
             / "stacking_plus"
-            / config.attack_type
+            / attack_type
             / dataset
             / f"{gen_name}_{data_id}"
         )
@@ -332,11 +317,7 @@ def main(
         pred_proba_blending = output_blending["pred_proba"][0]
 
         current_blending_dir = (
-            output_dir
-            / "blending"
-            / config.attack_type
-            / dataset
-            / f"{gen_name}_{data_id}"
+            output_dir / "blending" / attack_type / dataset / f"{gen_name}_{data_id}"
         )
         standard.create_directory(current_blending_dir)
 
@@ -379,7 +360,7 @@ def main(
         current_blending_plus_dir = (
             output_dir
             / "blending_plus"
-            / config.attack_type
+            / attack_type
             / dataset
             / f"{gen_name}_{data_id}"
         )
@@ -405,6 +386,13 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MIAs model inference")
+
+    parser.add_argument(
+        "--attack_type",
+        default=None,
+        type=str,
+        help="Setting to attack, tabddpm_black_box or tabsyn_black_box",
+    )
 
     parser.add_argument(
         "--meta_classifier_stacking_path",
@@ -450,6 +438,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(
+        attack_type=args.attack_type,
         meta_classifier_stacking_path=args.meta_classifier_stacking_path,
         meta_classifier_stacking_plus_path=args.meta_classifier_stacking_plus_path,
         meta_classifier_blending_path=args.meta_classifier_blending_path,
