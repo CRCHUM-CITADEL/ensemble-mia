@@ -11,8 +11,6 @@ synth_2nd_file = "synth_2nd.csv"
 test_file = "challenge_with_id.csv"
 test_label = "challenge_label.csv"  # Only in train
 
-attack_type = "tabddpm_black_box"  # "tabsyn_black_box"
-
 # Train
 train_id = list(range(1, 31))
 
