@@ -15,6 +15,7 @@ and `2.tabsyn_synth_gen_population.ipynb`for instructions on how to generate syn
 
 ```
 python train.py \
+--attack_model LOGAN TableGAN "Soft Voting" Stacking Stacking+ Blending Blending+ Blending++\
 --real_train_path data/real_train.csv \
 --real_val_path data/real_val.csv \
 --real_test_path data/real_test.csv \
@@ -28,22 +29,28 @@ python train.py \
 
 ```
 python eval.py \
+--attack_model LOGAN TableGAN "Soft Voting" Stacking Stacking+ Blending Blending+ Blending++ \
+--attack_type tabddpm_black_box \
 --meta_classifier_stacking_path stacking/meta_classifier.pkl \
 --meta_classifier_stacking_plus_path stacking_plus/meta_classifier.pkl \
 --meta_classifier_blending_path blending/meta_classifier.pkl \
---meta_classifier_blending_plus_path blending/meta_classifier.pkl \
+--meta_classifier_blending_plus_path blending_plus/meta_classifier.pkl \
+--meta_classifier_blending_plus_plus_path blending_plus_plus/meta_classifier.pkl \
 ```
 
 4.**Inference** stage: make predictions with the MIA models on all the datasets in **dev** and **final** folders.
 
 ```
 python infer.py \
+--attack_model LOGAN TableGAN "Soft Voting" Stacking Stacking+ Blending Blending+ Blending++ \
+--attack_type tabddpm_black_box \
 --meta_classifier_stacking_path stacking/meta_classifier.pkl \
 --meta_classifier_stacking_plus_path stacking_plus/meta_classifier.pkl \
 --meta_classifier_blending_path blending/meta_classifier.pkl \
---meta_classifier_blending_plus_path blending/meta_classifier.pkl \
+--meta_classifier_blending_plus_path blending_plus/meta_classifier.pkl \
+--meta_classifier_blending_plus_plus_path blending_plus_plus/meta_classifier.pkl \
 --dataset dev \
---is_plot False \
+--is_plot True \
 ```
 
 ## Requirements
