@@ -11,11 +11,12 @@
 2.**Training** stage: train the meta classifier of the ensemble models with the real data in **train** folder 
 (along with the 1st and 2nd generation synthetic data generated based on the real data) 
 and save the trained meta classifiers. See `1.real_data_processing.ipynb` for how to collect and split real data 
-and `2.tabsyn_synth_gen_population.ipynb`for instructions on how to generate synthetic data with TabSyn.
+and `2.tabsyn_synth_gen_population.ipynb` and `3.tabddpm_synth_gen_population.ipynb` for instructions on how to 
+generate synthetic data with TabDDPM and TabSyn.
 
 ```
 python train.py \
---attack_model LOGAN TableGAN "Soft Voting" Stacking Stacking+ Blending Blending+ Blending++\
+--attack_model LOGAN TableGAN "Soft Voting" Stacking Stacking+ Blending Blending+ Blending++ \
 --real_train_path data/real_train.csv \
 --real_val_path data/real_val.csv \
 --real_test_path data/real_test.csv \
