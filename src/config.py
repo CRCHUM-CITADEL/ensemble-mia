@@ -1,10 +1,14 @@
 from pathlib import Path
 
 # Path, folder and files
-DATA_PATH = Path("/data8/projets/dev_synthetic_data/data/MIDST")
-OUTPUT_PATH = Path("/data8/projets/dev_synthetic_data/output/MIDST")
+DATA_PATH = Path(
+    "/data8/projets/dev_synthetic_data/data/MIDST"
+)  # Replace this with the path of the data, i.e., Path("input")
+OUTPUT_PATH = Path(
+    "/data8/projets/dev_synthetic_data/output/MIDST"
+)  # Replace with the path to store the results (figures and predictions)
 
-# Synthetic data, the files names are the same in train, dev and final
+# Synthetic data, the files names are the same in train, dev and final (should not be modified)
 synth_train_file = "synth_train.csv"
 synth_test_file = "synth_test.csv"
 synth_2nd_file = "synth_2nd.csv"
