@@ -1,14 +1,10 @@
-# Standard library
-import sys
-
-sys.path.insert(0, "..")
-
 # 3rd party packages
 import numpy as np
 import pandas as pd
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
+import domias
 
 
 def fit_pred(
@@ -18,6 +14,8 @@ def fit_pred(
     y_train_tablegan_discriminator: np.ndarray,
     df_train_tablegan_classifier: pd.DataFrame,
     y_train_tablegan_classifier: np.ndarray,
+    df_ref: pd.DataFrame,
+    df_synth: pd.DataFrame,
     df_test: pd.DataFrame,
     cont_cols: list,
     cat_cols: list,
@@ -31,6 +29,8 @@ def fit_pred(
     :param y_train_tablegan_discriminator: the training label for the TableGAN discriminator
     :param df_train_tablegan_classifier: the data to train the TableGAN classifier
     :param y_train_tablegan_classifier: the training label for the TableGAN classifier
+    :param df_ref: the reference population data
+    :param df_synth: the synthetic data
     :param df_test: the test data
     :param cont_cols: the name(s) of the continuous variable(s)
     :param cat_cols: the name(s) of the categorical variable(s)
@@ -50,6 +50,12 @@ def fit_pred(
         num_kfolds=5,
         num_optuna_trials=20,
         use_gpu=True,
+    )
+
+    y_pred_proba_domias = domias.fit_pred(
+        df_ref=df_ref.astype(float),
+        df_synth=df_synth.astype(float),
+        df_test=df_test.astype(float),
     )
 
     pred_proba_voting = []
@@ -79,7 +85,7 @@ def fit_pred(
         )
 
         y_pred_proba_final = np.mean(
-            [y_pred_proba_logan, y_pred_proba_tablegan],
+            [y_pred_proba_logan, y_pred_proba_tablegan, y_pred_proba_domias],
             axis=0,
         )
 
