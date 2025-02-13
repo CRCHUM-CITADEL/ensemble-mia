@@ -18,7 +18,7 @@ from .tab_ddpm import GaussianMultinomialDiffusion, logger
 from .tab_ddpm.modules import timestep_embedding
 from .tab_ddpm.resample import create_named_schedule_sampler
 
-from .lib import (
+from midst_models.single_table_TabDDPM.lib import (
     Transformations,
     prepare_fast_dataloader,
     round_columns,
@@ -353,7 +353,7 @@ def pipeline_process_data(name, data_df, info, ratio=0.9, save=False, verbose=Tr
     return data, info
 
 
-def load_multi_table(data_dir, verbose=True):
+def load_multi_table(data_dir, train_df=None, verbose=True):
     dataset_meta = json.load(open(os.path.join(data_dir, "dataset_meta.json"), "r"))
 
     relation_order = dataset_meta["relation_order"]
@@ -362,10 +362,11 @@ def load_multi_table(data_dir, verbose=True):
     tables = {}
 
     for table, meta in dataset_meta["tables"].items():
-        if os.path.exists(os.path.join(data_dir, "train.csv")):
-            train_df = pd.read_csv(os.path.join(data_dir, "train.csv"))
-        else:
-            train_df = pd.read_csv(os.path.join(data_dir, f"{table}.csv"))
+        if train_df is None:
+            if os.path.exists(os.path.join(data_dir, "train.csv")):
+                train_df = pd.read_csv(os.path.join(data_dir, "train.csv"))
+            else:
+                train_df = pd.read_csv(os.path.join(data_dir, f"{table}.csv"))
         tables[table] = {
             "df": train_df,
             "domain": json.load(open(os.path.join(data_dir, f"{table}_domain.json"))),
@@ -614,6 +615,85 @@ def train_model(
         "column_orders": column_orders,
     }
 
+def fine_tune_model(
+    trained_diffusion,
+    df,
+    df_info,
+    model_params,
+    T_dict,
+    steps,
+    batch_size,
+    model_type,
+    gaussian_loss_type,
+    num_timesteps,
+    scheduler,
+    lr,
+    weight_decay,
+    device="cuda",
+):
+    T = Transformations(**T_dict)
+    dataset, label_encoders, column_orders = make_dataset_from_df(
+        df,
+        T,
+        is_y_cond=model_params["is_y_cond"],
+        ratios=[0.99, 0.005, 0.005],
+        df_info=df_info,
+        std=0,
+    )
+    # print(dataset.n_features)
+    train_loader = prepare_fast_dataloader(
+        dataset, split="train", batch_size=batch_size, y_type="long"
+    )
+
+    num_numerical_features = (
+        dataset.X_num["train"].shape[1] if dataset.X_num is not None else 0
+    )
+
+    K = np.array(dataset.get_category_sizes("train"))
+    if len(K) == 0 or T_dict["cat_encoding"] == "one-hot":
+        K = np.array([0])
+    # print(K)
+
+    num_numerical_features = (
+        dataset.X_num["train"].shape[1] if dataset.X_num is not None else 0
+    )
+    d_in = np.sum(K) + num_numerical_features
+    model_params["d_in"] = d_in
+    # print(d_in)
+
+    print("Model params: {}".format(model_params))
+    model = get_model(model_type, model_params)
+    model.to(device)
+
+    train_loader = prepare_fast_dataloader(
+        dataset, split="train", batch_size=batch_size
+    )
+
+    diffusion = trained_diffusion
+    diffusion.to(device)
+    diffusion.train()
+
+    trainer = Trainer(
+        diffusion,
+        train_loader,
+        lr=lr,
+        weight_decay=weight_decay,
+        steps=steps,
+        device=device,
+    )
+    trainer.run_loop()
+
+    if model_params["is_y_cond"] == "concat":
+        column_orders = column_orders[1:] + [column_orders[0]]
+    else:
+        column_orders = column_orders + [df_info["y_col"]]
+
+    return {
+        "diffusion": diffusion,
+        "label_encoders": label_encoders,
+        "dataset": dataset,
+        "column_orders": column_orders,
+    }
 
 class Classifier(nn.Module):
     def __init__(
@@ -798,6 +878,130 @@ def train_classifier(
         dim_t=dim_t,
         hidden_sizes=d_layers,
     ).to(device)
+
+    classifier_optimizer = optim.AdamW(classifier.parameters(), lr=lr)
+
+    empty_diffusion = GaussianMultinomialDiffusion(
+        num_classes=K,
+        num_numerical_features=num_numerical_features,
+        denoise_fn=None,
+        gaussian_loss_type=gaussian_loss_type,
+        num_timesteps=num_timesteps,
+        scheduler=scheduler,
+        device=device,
+    )
+    empty_diffusion.to(device)
+
+    schedule_sampler = create_named_schedule_sampler("uniform", empty_diffusion)
+
+    classifier.train()
+    resume_step = 0
+    for step in range(classifier_steps):
+        logger.logkv("step", step + resume_step)
+        logger.logkv(
+            "samples",
+            (step + resume_step + 1) * batch_size,
+        )
+        numerical_forward_backward_log(
+            classifier,
+            classifier_optimizer,
+            train_loader,
+            dataset,
+            schedule_sampler,
+            empty_diffusion,
+            prefix="train",
+        )
+
+        classifier_optimizer.step()
+        if not step % eval_interval:
+            with torch.no_grad():
+                classifier.eval()
+                numerical_forward_backward_log(
+                    classifier,
+                    classifier_optimizer,
+                    val_loader,
+                    dataset,
+                    schedule_sampler,
+                    empty_diffusion,
+                    prefix="val",
+                )
+                classifier.train()
+
+        if not step % log_interval:
+            logger.dumpkvs()
+
+    # # test classifier
+    classifier.eval()
+
+    correct = 0
+    for step in range(3000):
+        test_x, test_y = next(test_loader)
+        test_y = test_y.long().to(device)
+        if model_params["is_y_cond"] == "concat":
+            test_x = test_x[:, 1:].to(device)
+        else:
+            test_x = test_x.to(device)
+        with torch.no_grad():
+            pred = classifier(test_x, timesteps=torch.zeros(test_x.shape[0]).to(device))
+            correct += (pred.argmax(dim=1) == test_y).sum().item()
+
+    acc = correct / (3000 * batch_size)
+    print(acc)
+
+    return classifier
+
+def fine_tune_classifier(
+    trained_classifier,
+    df,
+    df_info,
+    model_params,
+    T_dict,
+    classifier_steps,
+    batch_size,
+    gaussian_loss_type,
+    num_timesteps,
+    scheduler,
+    device="cuda",
+    cluster_col="cluster",
+    d_layers=None,
+    dim_t=128,
+    lr=0.0001,
+):
+    T = Transformations(**T_dict)
+    dataset, label_encoders, column_orders = make_dataset_from_df(
+        df,
+        T,
+        is_y_cond=model_params["is_y_cond"],
+        ratios=[0.99, 0.005, 0.005],
+        df_info=df_info,
+        std=0,
+    )
+    print(dataset.n_features)
+    train_loader = prepare_fast_dataloader(
+        dataset, split="train", batch_size=batch_size, y_type="long"
+    )
+    val_loader = prepare_fast_dataloader(
+        dataset, split="val", batch_size=batch_size, y_type="long"
+    )
+    test_loader = prepare_fast_dataloader(
+        dataset, split="test", batch_size=batch_size, y_type="long"
+    )
+
+    eval_interval = 5
+    log_interval = 10
+
+    K = np.array(dataset.get_category_sizes("train"))
+    if len(K) == 0 or T_dict["cat_encoding"] == "one-hot":
+        K = np.array([0])
+    print(K)
+
+    num_numerical_features = (
+        dataset.X_num["train"].shape[1] if dataset.X_num is not None else 0
+    )
+    if model_params["is_y_cond"] == "concat":
+        num_numerical_features -= 1
+
+    classifier = trained_classifier.to(device)
 
     classifier_optimizer = optim.AdamW(classifier.parameters(), lr=lr)
 

@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 from sdv.metadata import MultiTableMetadata
 
-from .gen_multi_report import gen_multi_report
-from .pipeline_modules import *
-from .pipeline_utils import *
-from .tab_ddpm.utils import *
+from midst_models.single_table_TabDDPM.gen_multi_report import gen_multi_report
+from midst_models.single_table_TabDDPM.pipeline_modules import *
+from midst_models.single_table_TabDDPM.pipeline_utils import *
+from midst_models.single_table_TabDDPM.tab_ddpm.utils import *
 
 
 def clava_clustering(tables, relation_order, save_dir, configs):
@@ -79,7 +79,7 @@ def clava_training(tables, relation_order, save_dir, configs):
         id_cols = [col for col in df_with_cluster.columns if "_id" in col]
         df_without_id = df_with_cluster.drop(columns=id_cols)
         result = child_training(
-            df_without_id, tables[child]["domain"], parent, child, configs
+            df_without_id, tables[child]["domain"], parent, child, configs,
         )
         models[(parent, child)] = result
         pickle.dump(
@@ -89,17 +89,29 @@ def clava_training(tables, relation_order, save_dir, configs):
 
     return models
 
+def clava_fine_tuning(trained_models, new_tables, relation_order, save_dir, configs,
+                      new_diffusion_iterations, new_classifier_iterations):
+    new_models = {}
+    for parent, child in relation_order:
+        print(f"Fine Tuning {parent} -> {child} model from pretrained models")
+        df_with_cluster = new_tables[child]["df"]
+        id_cols = [col for col in df_with_cluster.columns if "_id" in col]
+        df_without_id = df_with_cluster.drop(columns=id_cols)
+        result = child_fine_tuning(
+            trained_models, df_without_id, new_tables[child]["domain"], parent, child, configs,
+            new_diffusion_iterations, new_classifier_iterations
+        )
+        new_models[(parent, child)] = result
+
+    return new_models
+
 
 class CustomUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
+    def find_class(self, modugit remotle, name):
         if module.startswith("midst_competition.single_table_ClavaDDPM"):
-            module = module.replace(
-                "midst_competition.single_table_ClavaDDPM",
-                "midst_models.single_table_TabDDPM",
-                1,
-            )
+            module = module.replace("midst_competition.single_table_ClavaDDPM",
+                                    "midst_models.single_table_TabDDPM", 1)
         return super().find_class(module, name)
-
 
 def clava_load_pretrained(relation_order, save_dir):
     models = {}
@@ -108,11 +120,9 @@ def clava_load_pretrained(relation_order, save_dir):
             os.path.join(save_dir, f"models/{parent}_{child}_ckpt.pkl")
         )
         print(f"{parent} -> {child} checkpoint found, loading...")
-        with open(
-            os.path.join(save_dir, f"models/{parent}_{child}_ckpt.pkl"), "rb"
-        ) as f:
+        with open(os.path.join(save_dir, f"models/{parent}_{child}_ckpt.pkl"), "rb") as f:
             models[(parent, child)] = CustomUnpickler(f).load()
-
+       
     return models
 
 

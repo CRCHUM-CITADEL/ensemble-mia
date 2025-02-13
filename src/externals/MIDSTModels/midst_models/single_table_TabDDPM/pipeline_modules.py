@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 from sklearn.mixture import BayesianGaussianMixture, GaussianMixture
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
-from .pipeline_utils import *
+from midst_models.single_table_TabDDPM.pipeline_utils import *
 
 
 def aggregate_and_sample(cluster_probabilities, child_group_lengths):
@@ -118,6 +118,68 @@ def child_training(
             child_model_params,
             child_T_dict,
             configs["classifier"]["iterations"],
+            configs["classifier"]["batch_size"],
+            configs["diffusion"]["gaussian_loss_type"],
+            configs["diffusion"]["num_timesteps"],
+            configs["diffusion"]["scheduler"],
+            cluster_col=y_col,
+            d_layers=configs["classifier"]["d_layers"],
+            dim_t=configs["classifier"]["dim_t"],
+            lr=configs["classifier"]["lr"],
+        )
+        child_result["classifier"] = child_classifier
+
+    child_result["df_info"] = child_info
+    child_result["model_params"] = child_model_params
+    child_result["T_dict"] = child_T_dict
+    return child_result
+
+def child_fine_tuning(
+    models, child_df_with_cluster, child_domain_dict, parent_name, child_name, configs,
+    new_diffusion_iterations, new_classifier_iterations,
+):
+    if parent_name is None:
+        y_col = "placeholder"
+        child_df_with_cluster["placeholder"] = list(range(len(child_df_with_cluster)))
+    else:
+        y_col = f"{parent_name}_{child_name}_cluster"
+    child_info = get_table_info(child_df_with_cluster, child_domain_dict, y_col)
+    child_model_params = get_model_params(
+        {
+            "d_layers": configs["diffusion"]["d_layers"],
+            "dropout": configs["diffusion"]["dropout"],
+        }
+    )
+    child_T_dict = get_T_dict()
+
+    child_result = fine_tune_model(
+        models[(parent_name, child_name)]["diffusion"],
+        child_df_with_cluster,
+        child_info,
+        child_model_params,
+        child_T_dict,
+        #configs["diffusion"]["iterations"],
+        new_diffusion_iterations,
+        configs["diffusion"]["batch_size"],
+        configs["diffusion"]["model_type"],
+        configs["diffusion"]["gaussian_loss_type"],
+        configs["diffusion"]["num_timesteps"],
+        configs["diffusion"]["scheduler"],
+        configs["diffusion"]["lr"],
+        configs["diffusion"]["weight_decay"],
+    )
+
+    if parent_name is None:
+        child_result["classifier"] = None
+    elif configs["classifier"]["iterations"] > 0:
+        child_classifier = train_classifier(
+            models[(parent_name, child_name)]["classifier"],
+            child_df_with_cluster,
+            child_info,
+            child_model_params,
+            child_T_dict,
+            #configs["classifier"]["iterations"],
+            new_classifier_iterations,
             configs["classifier"]["batch_size"],
             configs["diffusion"]["gaussian_loss_type"],
             configs["diffusion"]["num_timesteps"],
