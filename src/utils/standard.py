@@ -1,7 +1,10 @@
+# Standard library
 import os
 import zipfile
 from pathlib import Path
 from typing import Union
+
+# 3rd party packages
 import pandas as pd
 
 

@@ -1,8 +1,3 @@
-# Standard library
-import sys
-
-sys.path.insert(0, "..")
-
 # 3rd party packages
 import numpy as np
 import pandas as pd
@@ -13,6 +8,8 @@ from sklearn.linear_model import LogisticRegression
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
+from ..utils.learning import hyperparam_tuning
+import domias
 
 
 def fit_pred(
@@ -22,11 +19,14 @@ def fit_pred(
     y_train_tablegan_discriminator: np.ndarray,
     df_train_tablegan_classifier: pd.DataFrame,
     y_train_tablegan_classifier: np.ndarray,
+    df_ref: pd.DataFrame,
+    df_synth: pd.DataFrame,
     df_test: pd.DataFrame,
     cont_cols: list,
     cat_cols: list,
     iteration: int,
     meta_classifier: Pipeline = None,
+    meta_classifier_type: str = None,
     df_val: pd.DataFrame = None,
     y_val: np.ndarray = None,
     bounds: dict = None,
@@ -41,12 +41,15 @@ def fit_pred(
     :param y_train_tablegan_discriminator: the training label for the TableGAN discriminator
     :param df_train_tablegan_classifier: the data to train the TableGAN classifier
     :param y_train_tablegan_classifier: the training label for the TableGAN classifier
+    :param df_ref: the reference population data
+    :param df_synth: the synthetic data
     :param df_test: the features of the test set
     :param cont_cols: the name(s) of the continuous variable(s)
     :param cat_cols: the name(s) of the categorical variable(s)
     :param iteration: the number of time to train the model
     :param meta_classifier: the trained meta classifier. If the trained meta classifier is not provided,
-        df_val, y_val and bounds should be provided to train a meta classifier.
+        meta_classifier_type, df_val, y_val and bounds should be provided to train a meta classifier.
+    :param meta_classifier_type: type of the meta classifier, lr or xgb
     :param df_val: the features of the validation set
     :param y_val: the labels of the validation set
     :param bounds: the unique values of each categorical variables, in the format of
@@ -66,6 +69,26 @@ def fit_pred(
         num_kfolds=5,
         num_optuna_trials=20,
         use_gpu=True,
+    )
+
+    # Only need to train domias once
+    y_val_pred_proba_domias = domias.fit_pred(
+        df_ref=df_ref.astype(float),
+        df_synth=df_synth.astype(float),
+        df_test=df_val.astype(float),
+    )
+    y_test_pred_proba_domias = domias.fit_pred(
+        df_ref=df_ref.astype(float),
+        df_synth=df_synth.astype(float),
+        df_test=df_test.astype(float),
+    )
+
+    # Convert prediction to pandas DataFrame
+    y_val_pred_proba_domias = pd.DataFrame(
+        y_val_pred_proba_domias, columns=["pred_proba_domias"]
+    )
+    y_test_pred_proba_domias = pd.DataFrame(
+        y_test_pred_proba_domias, columns=["pred_proba_domias"]
     )
 
     pred_proba_blending = []
@@ -89,13 +112,13 @@ def fit_pred(
         )
 
         if meta_classifier is not None:
-            pipe_lr = meta_classifier
+            meta_classifier = meta_classifier
         else:
             ##################################################
             # Train meta classifier
             ##################################################
 
-            # Make predictions on validation set (to be used to train logistic regression)
+            # Make predictions on validation set (to be used to train meta classifier)
             y_val_pred_proba_logan = pipe_logan.predict_proba(df_val)[:, 1]
             y_val_pred_proba_tablegan = tablegan.pred_proba(
                 df=df_val,
@@ -111,45 +134,67 @@ def fit_pred(
             )
 
             # Training set for the meta classifier
-            df_val_lr = pd.concat(
-                [df_val, y_val_pred_proba_logan, y_val_pred_proba_tablegan],
+            df_val_meta = pd.concat(
+                [
+                    df_val,
+                    y_val_pred_proba_logan,
+                    y_val_pred_proba_tablegan,
+                    y_val_pred_proba_domias,
+                ],
                 axis=1,
             )
 
-            # Logistic Regression Model Pipeline
-            preprocessing = ColumnTransformer(
-                [
-                    ("continuous", StandardScaler(), cont_cols),
-                    (
-                        "categorical",
-                        OneHotEncoder(
-                            categories=[bounds[cat]["categories"] for cat in cat_cols],
-                            handle_unknown="ignore",
+            if meta_classifier_type == "lr":  # Logistic Regression Model Pipeline
+                preprocessing = ColumnTransformer(
+                    [
+                        ("continuous", StandardScaler(), cont_cols),
+                        (
+                            "categorical",
+                            OneHotEncoder(
+                                categories=[
+                                    bounds[cat]["categories"] for cat in cat_cols
+                                ],
+                                handle_unknown="ignore",
+                            ),
+                            cat_cols,
                         ),
-                        cat_cols,
-                    ),
-                ],
-                verbose_feature_names_out=False,
-                remainder="passthrough",  # Not transform the predictions of the individual attack model
-            )
+                    ],
+                    verbose_feature_names_out=False,
+                    remainder="passthrough",  # Not transform the predictions of the individual attack model
+                )
 
-            pipe_lr = Pipeline(
-                steps=[
-                    ("preprocessing", preprocessing),
-                    (
-                        "lr",
-                        LogisticRegression(max_iter=1000),
-                    ),
-                ]
-            )
+                meta_classifier = Pipeline(
+                    steps=[
+                        ("preprocessing", preprocessing),
+                        (
+                            "lr",
+                            LogisticRegression(max_iter=1000),
+                        ),
+                    ]
+                )
 
-            pipe_lr.fit(df_val_lr, y_val)
+                meta_classifier.fit(df_val_meta, y_val)
+            else:  # XGBoost
+                meta_classifier = hyperparam_tuning(
+                    x=df_val_meta,
+                    y=y_val,
+                    continuous_cols=[
+                        item
+                        for item in list(df_val_meta.columns)
+                        if item not in cat_cols
+                    ],
+                    categorical_cols=cat_cols,
+                    bounds=bounds,
+                    num_optuna_trials=20,
+                    num_kfolds=5,
+                    use_gpu=True,
+                )
 
         ##################################################
         # Evaluate meta classifier on test set
         ##################################################
 
-        # Test set (to be used to evaluation the logistic regression)
+        # Test set (to be used to evaluation the meta classifier)
         y_test_pred_proba_logan = pipe_logan.predict_proba(df_test)[:, 1]
         y_test_pred_proba_tablegan = tablegan.pred_proba(
             df=df_test,
@@ -165,15 +210,20 @@ def fit_pred(
         )
 
         # Test set for the meta classifier
-        df_test_lr = pd.concat(
-            [df_test, y_test_pred_proba_logan, y_test_pred_proba_tablegan],
+        df_test_meta = pd.concat(
+            [
+                df_test,
+                y_test_pred_proba_logan,
+                y_test_pred_proba_tablegan,
+                y_test_pred_proba_domias,
+            ],
             axis=1,
         )
 
-        y_pred_proba_final = pipe_lr.predict_proba(df_test_lr)[:, 1]
+        y_pred_proba_final = meta_classifier.predict_proba(df_test_meta)[:, 1]
 
         pred_proba_blending.append(y_pred_proba_final)
-        meta_classifier_blending.append(pipe_lr)
+        meta_classifier_blending.append(meta_classifier)
 
     return {
         "pred_proba": pred_proba_blending,

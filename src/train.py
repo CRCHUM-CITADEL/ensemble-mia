@@ -11,6 +11,7 @@ from clover.utils.standard import save_pickle
 from attack import (
     logan,
     tablegan,
+    domias,
     soft_voting,
     stacking,
     stacking_plus,
@@ -28,18 +29,24 @@ def main(
     real_train_path: str,
     real_val_path: str,
     real_test_path: str,
+    real_ref_path: str,
     synth_train_path: str,
     synth_test_path: str,
     synth_2nd_path: str,
+    meta_classifier_type: str,
     output_path: str,
 ) -> None:
     # Load data
     df_real_train = pd.read_csv(Path(real_train_path))
     df_real_val = pd.read_csv(Path(real_val_path))
     df_real_test = pd.read_csv(Path(real_test_path))
+    df_real_ref = pd.read_csv(Path(real_ref_path))
     df_synth_train = pd.read_csv(Path(synth_train_path))
     df_synth_test = pd.read_csv(Path(synth_test_path))
     df_synth_2nd = pd.read_csv(Path(synth_2nd_path))
+
+    # Merge the synthetic data for DOMIAS
+    df_synth = pd.concat([df_synth_train, df_synth_test])
 
     # Type convertion
     for col in config.metadata["categorical"]:
@@ -162,6 +169,40 @@ def main(
             seed=config.seed,
         )
 
+    # DOMIAS
+    if "DOMIAS" in attack_model:
+        pred_proba_domias = domias.fit_pred(
+            df_ref=df_real_ref.astype(float),
+            df_synth=df_synth.astype(float),
+            df_test=df_test.astype(float),
+        )
+
+        tpr_at_fpr_domias = stats.get_tpr_at_fpr(
+            true_membership=y_test,
+            predictions=pred_proba_domias,
+            max_fpr=0.1,
+        )
+
+        print(f"DOMIAS TPR at FPR==10%: {tpr_at_fpr_domias}")
+
+        standard.create_directory(output_path / "domias")
+        np.savetxt(
+            output_path / "domias" / "prediction.csv",
+            pred_proba_domias,
+            delimiter=",",
+        )
+
+        draw.plot_pred(
+            df_test=df_test,
+            y_pred_proba=pred_proba_domias,
+            cont_col=config.metadata["continuous"],
+            n=50,
+            save_path=output_path / "domias" / "plot_pred.jpg",
+            mode="eval",
+            y_test=y_test,
+            seed=config.seed,
+        )
+
     # Soft voting
     if "Soft Voting" in attack_model:
         pred_proba_soft_voting = soft_voting.fit_pred(
@@ -171,6 +212,8 @@ def main(
             y_train_tablegan_discriminator=y_train_tablegan_discriminator,
             df_train_tablegan_classifier=df_train_tablegan_classifier,
             y_train_tablegan_classifier=y_train_tablegan_classifier,
+            df_ref=df_real_ref,
+            df_synth=df_synth,
             df_test=df_test,
             cont_cols=config.metadata["continuous"],
             cat_cols=config.metadata["categorical"],
@@ -212,11 +255,14 @@ def main(
             y_train_tablegan_discriminator=y_train_tablegan_discriminator,
             df_train_tablegan_classifier=df_train_tablegan_classifier,
             y_train_tablegan_classifier=y_train_tablegan_classifier,
+            df_ref=df_real_ref,
+            df_synth=df_synth,
             df_test=df_test,
             cont_cols=config.metadata["continuous"],
             cat_cols=config.metadata["categorical"],
             iteration=1,
             meta_classifier=None,
+            meta_classifier_type=meta_classifier_type,
             df_val=df_val,
             y_val=y_val,
         )
@@ -267,11 +313,13 @@ def main(
             y_train_tablegan_discriminator=y_train_tablegan_discriminator,
             df_train_tablegan_classifier=df_train_tablegan_classifier,
             y_train_tablegan_classifier=y_train_tablegan_classifier,
+            df_ref=df_real_ref,
             df_test=df_test,
             cont_cols=config.metadata["continuous"],
             cat_cols=config.metadata["categorical"],
             iteration=1,
             meta_classifier=None,
+            meta_classifier_type=meta_classifier_type,
             df_val=df_val,
             y_val=y_val,
         )
@@ -320,11 +368,14 @@ def main(
             y_train_tablegan_discriminator=y_train_tablegan_discriminator,
             df_train_tablegan_classifier=df_train_tablegan_classifier,
             y_train_tablegan_classifier=y_train_tablegan_classifier,
+            df_ref=df_real_ref,
+            df_synth=df_synth,
             df_test=df_test,
             cont_cols=config.metadata["continuous"],
             cat_cols=config.metadata["categorical"],
             iteration=1,
             meta_classifier=None,
+            meta_classifier_type=meta_classifier_type,
             df_val=df_val,
             y_val=y_val,
             bounds=config.bounds,
@@ -376,11 +427,13 @@ def main(
             y_train_tablegan_discriminator=y_train_tablegan_discriminator,
             df_train_tablegan_classifier=df_train_tablegan_classifier,
             y_train_tablegan_classifier=y_train_tablegan_classifier,
+            df_ref=df_real_ref,
             df_test=df_test,
             cont_cols=config.metadata["continuous"],
             cat_cols=config.metadata["categorical"],
             iteration=1,
             meta_classifier=None,
+            meta_classifier_type=meta_classifier_type,
             df_val=df_val,
             y_val=y_val,
             bounds=config.bounds,
@@ -432,11 +485,13 @@ def main(
             y_train_tablegan_discriminator=y_train_tablegan_discriminator,
             df_train_tablegan_classifier=df_train_tablegan_classifier,
             y_train_tablegan_classifier=y_train_tablegan_classifier,
+            df_ref=df_real_ref,
             df_test=df_test,
             cont_cols=config.metadata["continuous"],
             cat_cols=config.metadata["categorical"],
             iteration=1,
             meta_classifier=None,
+            meta_classifier_type=meta_classifier_type,
             df_val=df_val,
             y_val=y_val,
             bounds=config.bounds,
@@ -522,6 +577,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--real_ref_path",
+        default=None,
+        type=str,
+        help="Full path of the real reference/population data",
+    )
+
+    parser.add_argument(
         "--synth_train_path",
         default=None,
         type=str,
@@ -543,6 +605,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--meta_classifier_type",
+        default=None,
+        type=str,
+        help="type of the meta classifier, lr or xgb",
+    )
+
+    parser.add_argument(
         "--output_path",
         default=None,
         type=str,
@@ -555,8 +624,10 @@ if __name__ == "__main__":
         real_train_path=args.real_train_path,
         real_val_path=args.real_val_path,
         real_test_path=args.real_test_path,
+        real_ref_path=args.real_ref_path,
         synth_train_path=args.synth_train_path,
         synth_test_path=args.synth_test_path,
         synth_2nd_path=args.synth_2nd_path,
+        meta_classifier_type=args.meta_classifier_type,
         output_path=args.output_path,
     )

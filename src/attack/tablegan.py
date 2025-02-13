@@ -1,7 +1,4 @@
 # Standard library
-import sys
-
-sys.path.insert(0, "..")
 from typing import Tuple
 
 # 3rd party packages
