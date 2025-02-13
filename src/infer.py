@@ -11,6 +11,7 @@ from clover.utils.standard import load_pickle
 from attack import (
     logan,
     tablegan,
+    domias,
     soft_voting,
     stacking,
     stacking_plus,
@@ -25,6 +26,7 @@ from utils import draw, standard
 def main(
     attack_model: list,
     attack_type: str,
+    real_ref_path: str,
     meta_classifier_stacking_path: str,
     meta_classifier_stacking_plus_path: str,
     meta_classifier_blending_path: str,
@@ -44,6 +46,9 @@ def main(
     gen_name = attack_type.split("_")[0]
     input_dir = config.DATA_PATH / attack_type / dataset
     output_dir = config.OUTPUT_PATH / "infer"
+
+    # Load reference population data
+    df_real_ref = pd.read_csv(Path(real_ref_path))
 
     # Load meta classifier for ensemble models
     if "Stacking" in attack_model:
@@ -96,6 +101,9 @@ def main(
         df_synth_2nd = pd.read_csv(
             input_dir / f"{gen_name}_{data_id}" / config.synth_2nd_file
         )
+
+        # Merge the synthetic data for DOMIAS
+        df_synth = pd.concat([df_synth_train, df_synth_test])
 
         # The challenge points
         df_test = pd.read_csv(input_dir / f"{gen_name}_{data_id}" / config.test_file)
@@ -210,6 +218,36 @@ def main(
                     seed=config.seed,
                 )
 
+        # DOMIAS
+        if "DOMIAS" in attack_model:
+            pred_proba_domias = domias.fit_pred(
+                df_ref=df_real_ref.astype(float),
+                df_synth=df_synth.astype(float),
+                df_test=df_test.astype(float),
+            )
+
+            current_domias_dir = (
+                output_dir / "domias" / attack_type / dataset / f"{gen_name}_{data_id}"
+            )
+            standard.create_directory(current_domias_dir)
+
+            np.savetxt(
+                current_domias_dir / "prediction.csv",
+                pred_proba_domias,
+                delimiter=",",
+            )
+
+            if is_plot:
+                draw.plot_pred(
+                    df_test=df_test,
+                    y_pred_proba=pred_proba_domias,
+                    cont_col=config.metadata["continuous"],
+                    n=50,
+                    save_path=current_domias_dir / "plot_pred.jpg",
+                    mode="infer",
+                    seed=config.seed,
+                )
+
         # Soft voting
         if "Soft Voting" in attack_model:
             pred_proba_soft_voting = soft_voting.fit_pred(
@@ -219,6 +257,8 @@ def main(
                 y_train_tablegan_discriminator=y_train_tablegan_discriminator,
                 df_train_tablegan_classifier=df_train_tablegan_classifier,
                 y_train_tablegan_classifier=y_train_tablegan_classifier,
+                df_ref=df_real_ref,
+                df_synth=df_synth,
                 df_test=df_test,
                 cont_cols=config.metadata["continuous"],
                 cat_cols=config.metadata["categorical"],
@@ -260,6 +300,8 @@ def main(
                 y_train_tablegan_discriminator=y_train_tablegan_discriminator,
                 df_train_tablegan_classifier=df_train_tablegan_classifier,
                 y_train_tablegan_classifier=y_train_tablegan_classifier,
+                df_ref=df_real_ref,
+                df_synth=df_synth,
                 df_test=df_test,
                 cont_cols=config.metadata["continuous"],
                 cat_cols=config.metadata["categorical"],
@@ -306,6 +348,7 @@ def main(
                 y_train_tablegan_discriminator=y_train_tablegan_discriminator,
                 df_train_tablegan_classifier=df_train_tablegan_classifier,
                 y_train_tablegan_classifier=y_train_tablegan_classifier,
+                df_ref=df_real_ref,
                 df_test=df_test,
                 cont_cols=config.metadata["continuous"],
                 cat_cols=config.metadata["categorical"],
@@ -350,6 +393,8 @@ def main(
                 y_train_tablegan_discriminator=y_train_tablegan_discriminator,
                 df_train_tablegan_classifier=df_train_tablegan_classifier,
                 y_train_tablegan_classifier=y_train_tablegan_classifier,
+                df_ref=df_real_ref,
+                df_synth=df_synth,
                 df_test=df_test,
                 cont_cols=config.metadata["continuous"],
                 cat_cols=config.metadata["categorical"],
@@ -396,6 +441,7 @@ def main(
                 y_train_tablegan_discriminator=y_train_tablegan_discriminator,
                 df_train_tablegan_classifier=df_train_tablegan_classifier,
                 y_train_tablegan_classifier=y_train_tablegan_classifier,
+                df_ref=df_real_ref,
                 df_test=df_test,
                 cont_cols=config.metadata["continuous"],
                 cat_cols=config.metadata["categorical"],
@@ -442,6 +488,7 @@ def main(
                 y_train_tablegan_discriminator=y_train_tablegan_discriminator,
                 df_train_tablegan_classifier=df_train_tablegan_classifier,
                 y_train_tablegan_classifier=y_train_tablegan_classifier,
+                df_ref=df_real_ref,
                 df_test=df_test,
                 cont_cols=config.metadata["continuous"],
                 cat_cols=config.metadata["categorical"],
@@ -506,6 +553,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--real_ref_path",
+        default=None,
+        type=str,
+        help="Full path of the real reference/population data",
+    )
+
+    parser.add_argument(
         "--meta_classifier_stacking_path",
         default=None,
         type=str,
@@ -558,6 +612,7 @@ if __name__ == "__main__":
     main(
         attack_model=args.attack_model,
         attack_type=args.attack_type,
+        real_ref_path=args.real_ref_path,
         meta_classifier_stacking_path=args.meta_classifier_stacking_path,
         meta_classifier_stacking_plus_path=args.meta_classifier_stacking_plus_path,
         meta_classifier_blending_path=args.meta_classifier_blending_path,
