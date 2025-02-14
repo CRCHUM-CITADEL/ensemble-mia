@@ -1,3 +1,8 @@
+# Standard library
+import sys
+
+sys.path.append("..")
+
 # 3rd party packages
 import numpy as np
 import pandas as pd
@@ -8,8 +13,8 @@ from sklearn.linear_model import LogisticRegression
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
-from ..utils.learning import hyperparam_tuning
-import domias
+from src.utils.learning import hyperparam_tuning
+from src.attack import domias
 
 
 def fit_pred(

@@ -1,10 +1,15 @@
+# Standard library
+import sys
+
+sys.path.append("..")
+
 # 3rd party packages
 import numpy as np
 import pandas as pd
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
-import domias
+from src.attack import domias
 
 
 def fit_pred(
