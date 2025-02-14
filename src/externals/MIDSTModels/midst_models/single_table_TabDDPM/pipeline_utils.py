@@ -18,7 +18,7 @@ from .tab_ddpm import GaussianMultinomialDiffusion, logger
 from .tab_ddpm.modules import timestep_embedding
 from .tab_ddpm.resample import create_named_schedule_sampler
 
-from midst_models.single_table_TabDDPM.lib import (
+from .lib import (
     Transformations,
     prepare_fast_dataloader,
     round_columns,
@@ -615,6 +615,7 @@ def train_model(
         "column_orders": column_orders,
     }
 
+
 def fine_tune_model(
     trained_diffusion,
     df,
@@ -694,6 +695,7 @@ def fine_tune_model(
         "dataset": dataset,
         "column_orders": column_orders,
     }
+
 
 class Classifier(nn.Module):
     def __init__(
@@ -949,6 +951,7 @@ def train_classifier(
     print(acc)
 
     return classifier
+
 
 def fine_tune_classifier(
     trained_classifier,
