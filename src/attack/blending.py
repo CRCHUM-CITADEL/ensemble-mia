@@ -77,20 +77,23 @@ def fit_pred(
     )
 
     # Only need to train domias once
-    y_val_pred_proba_domias = domias.fit_pred(
-        df_ref=df_ref.astype(float),
-        df_synth=df_synth.astype(float),
-        df_test=df_val.astype(float),
-    )
+    if meta_classifier is None:
+        y_val_pred_proba_domias = domias.fit_pred(
+            df_ref=df_ref.astype(float),
+            df_synth=df_synth.astype(float),
+            df_test=df_val.astype(float),
+        )
+        # Convert prediction to pandas DataFrame
+        y_val_pred_proba_domias = pd.DataFrame(
+            y_val_pred_proba_domias, columns=["pred_proba_domias"]
+        )
+    else:
+        y_val_pred_proba_domias = None
+
     y_test_pred_proba_domias = domias.fit_pred(
         df_ref=df_ref.astype(float),
         df_synth=df_synth.astype(float),
         df_test=df_test.astype(float),
-    )
-
-    # Convert prediction to pandas DataFrame
-    y_val_pred_proba_domias = pd.DataFrame(
-        y_val_pred_proba_domias, columns=["pred_proba_domias"]
     )
     y_test_pred_proba_domias = pd.DataFrame(
         y_test_pred_proba_domias, columns=["pred_proba_domias"]
