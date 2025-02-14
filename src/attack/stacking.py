@@ -2,17 +2,15 @@
 import sys
 
 sys.path.append("..")
-from typing import Union
 
 # 3rd party packages
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
-from src.utils.learning import hyperparam_tuning
+from src.utils.learning import hyperparam_tuning, fit_lr_pipeline
 from src.attack import domias
 
 
@@ -29,7 +27,7 @@ def fit_pred(
     cont_cols: list,
     cat_cols: list,
     iteration: int,
-    meta_classifier: Union[LogisticRegression, Pipeline] = None,
+    meta_classifier: Pipeline = None,
     meta_classifier_type: str = None,
     df_val: pd.DataFrame = None,
     y_val: np.ndarray = None,
@@ -152,8 +150,13 @@ def fit_pred(
             )
 
             if meta_classifier_type == "lr":  # Logistic Regression Model training
-                meta_classifier = LogisticRegression(max_iter=1000)
-                meta_classifier.fit(df_val_meta, y_val)
+                meta_classifier = fit_lr_pipeline(
+                    x=df_val_meta,
+                    y=y_val,
+                    continuous_cols=list(df_val_meta.columns),
+                    categorical_cols=[],
+                    bounds={},
+                )
             else:  # XGBoost
                 meta_classifier = hyperparam_tuning(
                     x=df_val_meta,

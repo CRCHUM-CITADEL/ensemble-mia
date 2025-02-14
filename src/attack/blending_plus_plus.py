@@ -6,15 +6,12 @@ sys.path.append("..")
 # 3rd party packages
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
 import clover.utils.external.gower.gower_dist as gower
-from src.utils.learning import hyperparam_tuning
+from src.utils.learning import hyperparam_tuning, fit_lr_pipeline
 from src.attack import domias
 
 
@@ -224,38 +221,17 @@ def fit_pred(
             )
 
             if meta_classifier_type == "lr":  # Logistic Regression Model Pipeline
-                preprocessing = ColumnTransformer(
-                    [
-                        (
-                            "continuous",
-                            StandardScaler(),
-                            cont_cols + ["min_gower_distance", "num_of_neighbor"],
-                        ),
-                        (
-                            "categorical",
-                            OneHotEncoder(
-                                categories=[
-                                    bounds[cat]["categories"] for cat in cat_cols
-                                ],
-                                handle_unknown="ignore",
-                            ),
-                            cat_cols,
-                        ),
+                meta_classifier = fit_lr_pipeline(
+                    x=df_val_meta,
+                    y=y_val,
+                    continuous_cols=[
+                        item
+                        for item in list(df_val_meta.columns)
+                        if item not in cat_cols
                     ],
-                    verbose_feature_names_out=False,
-                    remainder="passthrough",  # Not to transform the predictions of the individual attack model + nndr
+                    categorical_cols=cat_cols,
+                    bounds=bounds,
                 )
-
-                meta_classifier = Pipeline(
-                    steps=[
-                        ("preprocessing", preprocessing),
-                        (
-                            "lr",
-                            LogisticRegression(max_iter=1000),
-                        ),
-                    ]
-                )
-                meta_classifier.fit(df_val_meta, y_val)
             else:  # XGBoost
                 meta_classifier = hyperparam_tuning(
                     x=df_val_meta,

@@ -6,15 +6,12 @@ sys.path.append("..")
 # 3rd party packages
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
 import clover.utils.external.gower.gower_dist as gower
-from src.utils.learning import hyperparam_tuning
+from src.utils.learning import hyperparam_tuning, fit_lr_pipeline
 from src.attack import domias
 
 
@@ -188,22 +185,13 @@ def fit_pred(
             )
 
             if meta_classifier_type == "lr":  # Logistic Regression Model Pipeline
-                preprocessing = ColumnTransformer(
-                    [("continuous", StandardScaler(), ["min_gower_distance"])],
-                    verbose_feature_names_out=False,
-                    remainder="passthrough",  # Not to transform the predictions
+                meta_classifier = fit_lr_pipeline(
+                    x=df_val_meta,
+                    y=y_val,
+                    continuous_cols=list(df_val_meta.columns),
+                    categorical_cols=[],
+                    bounds={},
                 )
-
-                meta_classifier = Pipeline(
-                    steps=[
-                        ("preprocessing", preprocessing),
-                        (
-                            "lr",
-                            LogisticRegression(max_iter=1000),
-                        ),
-                    ]
-                )
-                meta_classifier.fit(df_val_meta, y_val)
             else:  # XGBoost
                 meta_classifier = hyperparam_tuning(
                     x=df_val_meta,
