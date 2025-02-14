@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 from sdv.metadata import MultiTableMetadata
 
-from midst_models.single_table_TabDDPM.gen_multi_report import gen_multi_report
-from midst_models.single_table_TabDDPM.pipeline_modules import *
-from midst_models.single_table_TabDDPM.pipeline_utils import *
-from midst_models.single_table_TabDDPM.tab_ddpm.utils import *
+from gen_multi_report import gen_multi_report
+from pipeline_modules import *
+from pipeline_utils import *
+from tab_ddpm.utils import *
 
 
 def clava_clustering(tables, relation_order, save_dir, configs):
@@ -107,7 +107,7 @@ def clava_fine_tuning(trained_models, new_tables, relation_order, save_dir, conf
 
 
 class CustomUnpickler(pickle.Unpickler):
-    def find_class(self, modugit remotle, name):
+    def find_class(self, module, name):
         if module.startswith("midst_competition.single_table_ClavaDDPM"):
             module = module.replace("midst_competition.single_table_ClavaDDPM",
                                     "midst_models.single_table_TabDDPM", 1)

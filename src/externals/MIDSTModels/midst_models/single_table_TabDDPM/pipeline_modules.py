@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 from sklearn.mixture import BayesianGaussianMixture, GaussianMixture
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
-from midst_models.single_table_TabDDPM.pipeline_utils import *
+from pipeline_utils import *
 
 
 def aggregate_and_sample(cluster_probabilities, child_group_lengths):

@@ -629,7 +629,8 @@ def fine_tune_model(
     scheduler,
     lr,
     weight_decay,
-    device="cuda",
+    #device="cuda",
+    device="cpu",
 ):
     T = Transformations(**T_dict)
     dataset, label_encoders, column_orders = make_dataset_from_df(
@@ -961,7 +962,8 @@ def fine_tune_classifier(
     gaussian_loss_type,
     num_timesteps,
     scheduler,
-    device="cuda",
+    #device="cuda",
+    device="cpu",
     cluster_col="cluster",
     d_layers=None,
     dim_t=128,
@@ -1034,6 +1036,7 @@ def fine_tune_classifier(
             schedule_sampler,
             empty_diffusion,
             prefix="train",
+            device=device,
         )
 
         classifier_optimizer.step()
@@ -1048,6 +1051,7 @@ def fine_tune_classifier(
                     schedule_sampler,
                     empty_diffusion,
                     prefix="val",
+                    device=device,
                 )
                 classifier.train()
 
