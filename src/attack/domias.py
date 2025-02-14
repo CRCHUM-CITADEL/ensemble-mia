@@ -27,6 +27,6 @@ def fit_pred(
     domias_ratio = p_g / p_ref
 
     scaler = MinMaxScaler()
-    pred_proba_domias = scaler.fit_transform(domias_ratio)
+    pred_proba_domias = scaler.fit_transform(domias_ratio.reshape(-1, 1))
 
-    return pred_proba_domias
+    return pred_proba_domias.flatten()
