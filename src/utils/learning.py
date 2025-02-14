@@ -4,6 +4,7 @@ from typing import Callable, List
 # 3rd party packages
 import numpy as np
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
@@ -160,3 +161,54 @@ def hyperparam_tuning(
     best_pipe.fit(x, y)
 
     return best_pipe
+
+
+def fit_lr_pipeline(
+    x: pd.DataFrame,
+    y: np.ndarray,
+    continuous_cols: List[str],
+    categorical_cols: List[str],
+    bounds: dict,
+) -> Pipeline:
+    """
+    Transform data and fit a logistic regression pipeline
+
+    :param x: the inputs
+    :param y: the ground truth
+    :param continuous_cols: the continuous columns
+    :param categorical_cols: the categorical columns
+    :param bounds: the unique values of each categorical variables in the format of
+        {"col1": {"categories": ["a", "b",...], ...}
+
+    :return: the fitted logistic regression pipeline
+    """
+
+    preprocessing = ColumnTransformer(
+        [
+            ("continuous", StandardScaler(), continuous_cols),
+            (
+                "categorical",
+                OneHotEncoder(
+                    categories=[bounds[cat]["categories"] for cat in categorical_cols],
+                    handle_unknown="ignore",
+                ),
+                categorical_cols,
+            ),
+        ],
+        verbose_feature_names_out=False,
+        remainder="passthrough",
+    )
+
+    lr_pipeline = Pipeline(
+        steps=[
+            ("preprocessing", preprocessing),
+            (
+                "lr",
+                LogisticRegression(max_iter=1000),
+            ),
+        ]
+    )
+
+    lr_pipeline.fit(x, y)
+
+    return lr_pipeline
