@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 from sklearn.mixture import BayesianGaussianMixture, GaussianMixture
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
-from pipeline_utils import *
+from .pipeline_utils import *
 
 
 def aggregate_and_sample(cluster_probabilities, child_group_lengths):
@@ -134,9 +134,16 @@ def child_training(
     child_result["T_dict"] = child_T_dict
     return child_result
 
+
 def child_fine_tuning(
-    models, child_df_with_cluster, child_domain_dict, parent_name, child_name, configs,
-    new_diffusion_iterations, new_classifier_iterations,
+    models,
+    child_df_with_cluster,
+    child_domain_dict,
+    parent_name,
+    child_name,
+    configs,
+    new_diffusion_iterations,
+    new_classifier_iterations,
 ):
     if parent_name is None:
         y_col = "placeholder"
@@ -158,7 +165,7 @@ def child_fine_tuning(
         child_info,
         child_model_params,
         child_T_dict,
-        #configs["diffusion"]["iterations"],
+        # configs["diffusion"]["iterations"],
         new_diffusion_iterations,
         configs["diffusion"]["batch_size"],
         configs["diffusion"]["model_type"],
@@ -178,7 +185,7 @@ def child_fine_tuning(
             child_info,
             child_model_params,
             child_T_dict,
-            #configs["classifier"]["iterations"],
+            # configs["classifier"]["iterations"],
             new_classifier_iterations,
             configs["classifier"]["batch_size"],
             configs["diffusion"]["gaussian_loss_type"],

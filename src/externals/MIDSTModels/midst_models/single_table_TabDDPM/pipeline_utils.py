@@ -18,7 +18,7 @@ from .tab_ddpm import GaussianMultinomialDiffusion, logger
 from .tab_ddpm.modules import timestep_embedding
 from .tab_ddpm.resample import create_named_schedule_sampler
 
-from midst_models.single_table_TabDDPM.lib import (
+from .lib import (
     Transformations,
     prepare_fast_dataloader,
     round_columns,
@@ -615,6 +615,7 @@ def train_model(
         "column_orders": column_orders,
     }
 
+
 def fine_tune_model(
     trained_diffusion,
     df,
@@ -629,8 +630,7 @@ def fine_tune_model(
     scheduler,
     lr,
     weight_decay,
-    #device="cuda",
-    device="cpu",
+    device="cuda",
 ):
     T = Transformations(**T_dict)
     dataset, label_encoders, column_orders = make_dataset_from_df(
@@ -695,6 +695,7 @@ def fine_tune_model(
         "dataset": dataset,
         "column_orders": column_orders,
     }
+
 
 class Classifier(nn.Module):
     def __init__(
@@ -951,6 +952,7 @@ def train_classifier(
 
     return classifier
 
+
 def fine_tune_classifier(
     trained_classifier,
     df,
@@ -962,8 +964,7 @@ def fine_tune_classifier(
     gaussian_loss_type,
     num_timesteps,
     scheduler,
-    #device="cuda",
-    device="cpu",
+    device="cuda",
     cluster_col="cluster",
     d_layers=None,
     dim_t=128,

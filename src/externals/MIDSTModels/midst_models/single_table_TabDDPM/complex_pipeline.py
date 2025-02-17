@@ -1,3 +1,6 @@
+import sys
+sys.path.append(".")
+
 import argparse
 import json
 import os
@@ -8,10 +11,10 @@ import numpy as np
 import pandas as pd
 from sdv.metadata import MultiTableMetadata
 
-from gen_multi_report import gen_multi_report
-from pipeline_modules import *
-from pipeline_utils import *
-from tab_ddpm.utils import *
+from .gen_multi_report import gen_multi_report
+from .pipeline_modules import *
+from .pipeline_utils import *
+from .tab_ddpm.utils import *
 
 
 def clava_clustering(tables, relation_order, save_dir, configs):
