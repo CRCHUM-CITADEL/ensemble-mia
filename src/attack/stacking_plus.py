@@ -1,16 +1,18 @@
+# Standard library
+import sys
+
+sys.path.append("..")
+
 # 3rd party packages
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 # Local
 from clover.metrics.privacy.membership import Logan, TableGan
 import clover.utils.external.gower.gower_dist as gower
-from ..utils.learning import hyperparam_tuning
-import domias
+from src.utils.learning import hyperparam_tuning, fit_lr_pipeline
+from src.attack import domias
 
 
 def fit_pred(
@@ -110,20 +112,23 @@ def fit_pred(
     # Prediction with DOMIAS
     ##################################################
     # Only need to train domias once
-    y_val_pred_proba_domias = domias.fit_pred(
-        df_ref=df_ref.astype(float),
-        df_synth=df_synth_ref[df_synth_train.columns].astype(float),
-        df_test=df_val.astype(float),
-    )
+    if meta_classifier is None:
+        y_val_pred_proba_domias = domias.fit_pred(
+            df_ref=df_ref.astype(float),
+            df_synth=df_synth_ref[df_synth_train.columns].astype(float),
+            df_test=df_val.astype(float),
+        )
+        # Convert prediction to pandas DataFrame
+        y_val_pred_proba_domias = pd.DataFrame(
+            y_val_pred_proba_domias, columns=["pred_proba_domias"]
+        )
+    else:
+        y_val_pred_proba_domias = None
+
     y_test_pred_proba_domias = domias.fit_pred(
         df_ref=df_ref.astype(float),
         df_synth=df_synth_ref[df_synth_train.columns].astype(float),
         df_test=df_test.astype(float),
-    )
-
-    # Convert prediction to pandas DataFrame
-    y_val_pred_proba_domias = pd.DataFrame(
-        y_val_pred_proba_domias, columns=["pred_proba_domias"]
     )
     y_test_pred_proba_domias = pd.DataFrame(
         y_test_pred_proba_domias, columns=["pred_proba_domias"]
@@ -180,22 +185,13 @@ def fit_pred(
             )
 
             if meta_classifier_type == "lr":  # Logistic Regression Model Pipeline
-                preprocessing = ColumnTransformer(
-                    [("continuous", StandardScaler(), ["min_gower_distance"])],
-                    verbose_feature_names_out=False,
-                    remainder="passthrough",  # Not to transform the predictions
+                meta_classifier = fit_lr_pipeline(
+                    x=df_val_meta,
+                    y=y_val,
+                    continuous_cols=list(df_val_meta.columns),
+                    categorical_cols=[],
+                    bounds={},
                 )
-
-                meta_classifier = Pipeline(
-                    steps=[
-                        ("preprocessing", preprocessing),
-                        (
-                            "lr",
-                            LogisticRegression(max_iter=1000),
-                        ),
-                    ]
-                )
-                meta_classifier.fit(df_val_meta, y_val)
             else:  # XGBoost
                 meta_classifier = hyperparam_tuning(
                     x=df_val_meta,

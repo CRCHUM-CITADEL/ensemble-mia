@@ -12,7 +12,7 @@
 (along with the 1st and 2nd generation synthetic data generated based on the real data) 
 and save the trained meta classifiers. See `1.real_data_processing.ipynb` for how to collect and split real data 
 and `2.tabsyn_synth_gen_population.ipynb` and `3.tabddpm_synth_gen_population.ipynb` for instructions on how to 
-generate synthetic data with TabDDPM and TabSyn. Note: We have added the trained meta classifiers in the **output** folder.
+generate synthetic data with TabDDPM and TabSyn. Note: We have added the trained XGBoost meta classifiers in the **output** folder.
 You can skip this step and use the provided meta classifiers, if you do not want to train your own.
 
 ```
