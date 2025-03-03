@@ -17,12 +17,12 @@ from .pipeline_utils import *
 from .tab_ddpm.utils import *
 
 
-def clava_clustering(tables, relation_order, save_dir, configs):
+def clava_clustering(tables, relation_order, save_dir, configs, force_tables=False):
     relation_order_reversed = relation_order[::-1]
     all_group_lengths_prob_dicts = {}
 
     # Clustering
-    if os.path.exists(os.path.join(save_dir, "cluster_ckpt.pkl")):
+    if os.path.exists(os.path.join(save_dir, "cluster_ckpt.pkl")) and force_tables==False:
         print("Clustering checkpoint found, loading...")
         cluster_ckpt = pickle.load(
             open(os.path.join(save_dir, "cluster_ckpt.pkl"), "rb")

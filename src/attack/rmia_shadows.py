@@ -9,7 +9,6 @@ import shutil
 import pickle
 import argparse
 import random
-import multiprocessing
 
 # 3rd party
 import pandas as pd
@@ -52,6 +51,11 @@ if __name__ == '__main__':
                 df = pd.read_csv(csv_file)
                 dfs.append(df)
 
+    # for file in [os.path.join(data_dir, "train_meta.csv"), os.path.join(data_dir, "test_meta.csv")]: # To delete
+    #     if os.path.exists(file):  # To delete
+    #         df = pd.read_csv(file)  # To delete
+    #         dfs.append(df)  # To delete
+
     # 1. Merge all dataframes into one master dataframe, removing duplicates
     master_challenge_df = pd.concat(dfs, ignore_index=True).drop_duplicates()
 
@@ -63,7 +67,7 @@ if __name__ == '__main__':
     print('Length of potential train population excluding all ids in challenge sets: ', len(train_pop))
 
     # Create the necessary folders and config files
-    new_folder = os.path.join(data_dir, "initial_model_rmia")
+    new_folder = os.path.join(data_dir, "initial_model_rmia_2")
     # create the new folder if it doesn't exist
     if not os.path.exists(new_folder):
         os.makedirs(new_folder)
@@ -100,9 +104,9 @@ if __name__ == '__main__':
     train.to_csv(os.path.join(new_folder, 'initial_train_set.csv'))
 
     # train the initial model
-    initial_model = train_tabddpm(train, configs, save_dir)['models']
+    initial_model = train_tabddpm(train, configs, save_dir)
     # Pickle dump the results
-    with open(os.path.join(data_dir, 'rmia_initial_model.pkl'), 'wb') as file:
+    with open(os.path.join(data_dir, 'rmia_initial_model_2.pkl'), 'wb') as file:
         pickle.dump(initial_model, file)
 
     # create the random lists, each with half the size of unique_ids
@@ -131,18 +135,19 @@ if __name__ == '__main__':
         # Shuffle the dataset
         selected_challenges = selected_challenges.sample(frac=1, random_state=42).reset_index(drop=True)
 
-        train_result = fine_tune_tabddpm(trained_models=initial_model,
+        train_result = fine_tune_tabddpm(trained_models=initial_model['models'],
                                          new_train_set=selected_challenges,
                                          configs=configs,
                                          save_dir=save_dir,
                                          new_diffusion_iterations=200000,
                                          new_classifier_iterations=20000,
+                                         n_synth=20000,
                                          )
 
         attack_data['fine_tuned_results'].append(train_result)
 
     # Pickle dump the results
-    with open(os.path.join(data_dir, 'rmia_shadows.pkl'), 'wb') as file:
+    with open(os.path.join(data_dir, 'rmia_shadows_2.pkl'), 'wb') as file:
         pickle.dump(attack_data, file)
 
 

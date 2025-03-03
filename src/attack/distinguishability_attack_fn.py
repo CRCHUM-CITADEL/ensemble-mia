@@ -128,6 +128,7 @@ def fine_tune_tabddpm(
     save_dir,
     new_diffusion_iterations=100,
     new_classifier_iterations=10,
+    n_synth=20000,
 ):
     material = {"tables": {}, "relation_order": {}, "save_dir": save_dir, "all_group_lengths_prob_dicts": {},
                 "models": {}, "configs": configs, "synth_data": {}}
@@ -140,7 +141,7 @@ def fine_tune_tabddpm(
 
     # Clustering on the multi-table dataset
     new_tables, all_group_lengths_prob_dicts = clava_clustering(
-        new_tables, relation_order, save_dir, configs
+        new_tables, relation_order, save_dir, configs, force_tables=True
     )
     material["tables"] = new_tables
     material["all_group_lengths_prob_dicts"] = all_group_lengths_prob_dicts
@@ -160,7 +161,7 @@ def fine_tune_tabddpm(
 
     # Determine the sample scale
     # We want the final synthetic data = len(provided_synth_data) = 20,000
-    sample_scale = 20000 / len(new_tables["trans"]["df"])
+    sample_scale = n_synth / len(new_tables["trans"]["df"])
 
     # Generate synthetic data from scratch
     cleaned_tables, synthesizing_time_spent, matching_time_spent = clava_synthesizing(
