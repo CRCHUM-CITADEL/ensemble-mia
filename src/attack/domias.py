@@ -6,9 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 def fit_pred(
-    df_ref: pd.DataFrame,
-    df_synth: pd.DataFrame,
-    df_test: pd.DataFrame,
+    df_ref: pd.DataFrame, df_synth: pd.DataFrame, df_test: pd.DataFrame
 ) -> np.ndarray:
     """Fit DOMIAS and output the prediction on the test set
 
@@ -18,6 +16,10 @@ def fit_pred(
 
     :return: the predicted probabilities
     """
+
+    df_ref = df_ref.astype(float)
+    df_synth = df_synth.astype(float)
+    df_test = df_test.astype(float)
 
     density_ref = gaussian_kde(df_ref.values.transpose(1, 0))
     density_synth = gaussian_kde(df_synth.values.transpose(1, 0))
