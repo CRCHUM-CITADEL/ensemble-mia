@@ -1,8 +1,10 @@
 # Standard library
 import os
+import pickle
 import zipfile
+from datetime import datetime
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 # 3rd party packages
 import pandas as pd
@@ -79,3 +81,48 @@ def zip_files(model_name: str, tasks: list, file_path: Union[str, Path]) -> None
                         raise FileNotFoundError(
                             f"`prediction.csv` not found in {path}."
                         )
+
+
+def get_date() -> str:
+    """
+    Get the current date formatted as YYYY-MM-DD.
+
+    :return: the date
+    """
+    return datetime.today().strftime("%Y-%m-%d")
+
+
+def load_pickle(filepath: Union[Path, str]) -> Any:
+    """
+    Load a pickled object.
+
+    :param filepath: the filename of the object with the extension
+    :return: the pickled object
+    """
+
+    path = Path(filepath)
+    assert path.exists()
+    with open(path, "rb") as file:
+        obj = pickle.load(file)
+    return obj
+
+
+def save_pickle(
+    obj: Any, folderpath: Union[Path, str], filename: str, date: bool = False
+) -> None:
+    """
+    Save an object with pickle.
+
+    :param obj: the object to pickle
+    :param folderpath: the path of the folder where to save the object
+    :param filename: the filename of the object to pickle without the extension
+    :param date: add the date at the beginning of the filename if *True*
+    :return: *None*
+    """
+
+    path = Path(folderpath)
+    assert path.exists()
+    if obj is not None:
+        name = f"{get_date()}_{filename}" if date else filename
+        with open(path / f"{name}.pkl", "wb") as file:
+            pickle.dump(obj, file, pickle.HIGHEST_PROTOCOL)
