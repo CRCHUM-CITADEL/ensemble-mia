@@ -9,11 +9,15 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.metrics import make_scorer
 import xgboost as xgb
 from optuna.trial import Trial
 import optuna
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+# Local
+from .stats import get_tpr_at_fpr
 
 
 def pipeline_prediction(
@@ -42,10 +46,18 @@ def pipeline_prediction(
                 "xgboost",
                 predictor(
                     n_estimators=100,
-                    eta=trial.suggest_float("eta", 0.001, 0.1, log=True),
-                    max_depth=trial.suggest_int("max_depth", 4, 10),
-                    subsample=trial.suggest_float("subsample", 0.5, 1),
+                    eta=trial.suggest_float("eta", 0.0001, 0.1, log=True),
+                    max_depth=trial.suggest_int("max_depth", 3, 10),
+                    subsample=trial.suggest_float("subsample", 0.1, 1),
                     colsample_bytree=trial.suggest_float("colsample_bylevel", 0.5, 1),
+                    reg_alpha=trial.suggest_categorical(
+                        "reg_alpha",
+                        [0, 0.1, 0.5, 1, 5, 10],
+                    ),
+                    reg_lambda=trial.suggest_categorical(
+                        "reg_lambda",
+                        [0, 0.1, 0.5, 1, 5, 10, 100],
+                    ),
                     tree_method="auto" if not use_gpu else "gpu_hist",
                     objective=loss_function,
                     seed=np.random.randint(1000),
@@ -140,13 +152,16 @@ def hyperparam_tuning(
         loss_function="binary:logistic",
         use_gpu=use_gpu,
     )
+    # Custom scorer
+    tpr_scorer = make_scorer(get_tpr_at_fpr, needs_proba=True)
+
     objective = lambda trial: objective_cross_val(
         trial,
         pipeline=pipeline,
         df_train=x,
         y_train=y,
         num_kfolds=num_kfolds,
-        scoring="roc_auc",
+        scoring=tpr_scorer,
     )
     study = optuna.create_study(
         direction="maximize",
