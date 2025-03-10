@@ -2,18 +2,18 @@ from pathlib import Path
 
 # Path, folder and files
 DATA_PATH = Path(
-    "/data8/projets/dev_synthetic_data/data/MIDST"
+    "../input"
 )  # Replace this with the path of the data, i.e., Path("input")
+RMIA_PRED_PATH = Path("../input")  # Path where the prediction from RMIA is stored
 OUTPUT_PATH = Path(
-    "/data8/projets/dev_synthetic_data/output/MIDST/xgb"
+    "../output"
 )  # Replace with the path to store the results (figures and predictions)
 
 # Synthetic data, the files names are the same in train, dev and final (should not be modified)
-synth_train_file = "synth_train.csv"
-synth_test_file = "synth_test.csv"
-synth_2nd_file = "synth_2nd.csv"
+synth_file = "trans_synthetic.csv"
 test_file = "challenge_with_id.csv"
 test_label = "challenge_label.csv"  # Only in train
+rmia_file = "rmia_scores_k_5.csv"
 
 # Train
 train_id = list(range(1, 31))
@@ -30,6 +30,18 @@ metadata = {
     "continuous": ["trans_date", "amount", "balance", "account"],
     "categorical": ["trans_type", "operation", "k_symbol", "bank"],
     "variable_to_predict": "trans_type",
+}
+
+col_type = {
+    "float": ["amount", "balance"],
+    "int": [
+        "trans_date",
+        "account",
+        "trans_type",
+        "operation",
+        "k_symbol",
+        "bank",
+    ],
 }
 
 bounds = {
