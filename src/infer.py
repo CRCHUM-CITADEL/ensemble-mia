@@ -7,30 +7,16 @@ import numpy as np
 import pandas as pd
 
 # Local
-from clover.utils.standard import load_pickle
-from attack import (
-    logan,
-    tablegan,
-    domias,
-    soft_voting,
-    stacking,
-    stacking_plus,
-    blending,
-    blending_plus,
-    blending_plus_plus,
-)
-import config
+from utils.standard import load_pickle
+from attack import blending_plus_plus
 from utils import draw, standard
+import config
 
 
 def main(
     attack_model: list,
     attack_type: str,
     real_ref_path: str,
-    meta_classifier_stacking_path: str,
-    meta_classifier_stacking_plus_path: str,
-    meta_classifier_blending_path: str,
-    meta_classifier_blending_plus_path: str,
     meta_classifier_blending_plus_plus_path: str,
     dataset: str,
     is_plot: str,
@@ -46,35 +32,16 @@ def main(
     gen_name = attack_type.split("_")[0]
     input_dir = config.DATA_PATH / attack_type / dataset
     output_dir = config.OUTPUT_PATH / "infer"
+    rmia_dir = config.RMIA_PRED_PATH / attack_type / dataset
 
-    # Load reference population data
+    # Load reference population data and synthetic data
     df_real_ref = pd.read_csv(Path(real_ref_path))
 
+    # Type convertion
+    for col in config.metadata["categorical"]:
+        df_real_ref[col] = df_real_ref[col].astype("object")
+
     # Load meta classifier for ensemble models
-    if "Stacking" in attack_model:
-        meta_classifier_stacking = load_pickle(Path(meta_classifier_stacking_path))
-    else:
-        meta_classifier_stacking = None
-
-    if "Stacking+" in attack_model:
-        meta_classifier_stacking_plus = load_pickle(
-            Path(meta_classifier_stacking_plus_path)
-        )
-    else:
-        meta_classifier_stacking_plus = None
-
-    if "Blending" in attack_model:
-        meta_classifier_blending = load_pickle(Path(meta_classifier_blending_path))
-    else:
-        meta_classifier_blending = None
-
-    if "Blending+" in attack_model:
-        meta_classifier_blending_plus = load_pickle(
-            Path(meta_classifier_blending_plus_path)
-        )
-    else:
-        meta_classifier_blending_plus = None
-
     if "Blending++" in attack_model:
         meta_classifier_blending_plus_plus = load_pickle(
             Path(meta_classifier_blending_plus_plus_path)
@@ -92,18 +59,14 @@ def main(
         print("-----------------------------")
         print(f"Predicting for {gen_name}_{data_id}")
         print("-----------------------------")
-        df_synth_train = pd.read_csv(
-            input_dir / f"{gen_name}_{data_id}" / config.synth_train_file
-        )
-        df_synth_test = pd.read_csv(
-            input_dir / f"{gen_name}_{data_id}" / config.synth_test_file
-        )
-        df_synth_2nd = pd.read_csv(
-            input_dir / f"{gen_name}_{data_id}" / config.synth_2nd_file
-        )
+        df_synth = pd.read_csv(input_dir / f"{gen_name}_{data_id}" / config.synth_file)
 
-        # Merge the synthetic data for DOMIAS
-        df_synth = pd.concat([df_synth_train, df_synth_test])
+        # Decimal place convertion for synthetic data
+        df_synth = standard.trans_type(df=df_synth, col_type=config.col_type, decimal=1)
+
+        df_rmia_pred = pd.read_csv(
+            rmia_dir / f"{gen_name}_{data_id}" / config.rmia_file
+        )
 
         # The challenge points
         df_test = pd.read_csv(input_dir / f"{gen_name}_{data_id}" / config.test_file)
@@ -113,384 +76,20 @@ def main(
 
         # Type convertion
         for col in config.metadata["categorical"]:
-            df_synth_train[col] = df_synth_train[col].astype("object")
-            df_synth_test[col] = df_synth_test[col].astype("object")
-            df_synth_2nd[col] = df_synth_2nd[col].astype("object")
+            df_synth[col] = df_synth[col].astype("object")
             df_test[col] = df_test[col].astype("object")
-
-        ##################################################
-        # Prepare data
-        ##################################################
-
-        # LOGAN
-        df_train_logan, y_train_logan = logan.prepare_data(
-            df_synth_train=df_synth_train, df_synth_2nd=df_synth_2nd
-        )
-
-        # TableGAN
-        (
-            df_train_tablegan_discriminator,
-            y_train_tablegan_discriminator,
-            df_train_tablegan_classifier,
-            y_train_tablegan_classifier,
-        ) = tablegan.prepare_data(
-            df_synth_train=df_synth_train,
-            df_synth_test=df_synth_test,
-            df_synth_2nd=df_synth_2nd,
-            size_1st_gen_cla=len(df_synth_test),
-            size_2nd_gen_dis=len(df_synth_train) - len(df_synth_test),
-            seed=config.seed,
-        )
 
         ##################################################
         # Train and eval
         ##################################################
 
-        # LOGAN
-        if "LOGAN" in attack_model:
-            pred_proba_logan = logan.fit_pred(
-                df_train_logan=df_train_logan,
-                y_train_logan=y_train_logan,
-                df_test=df_test,
-                cont_cols=config.metadata["continuous"],
-                cat_cols=config.metadata["categorical"],
-                iteration=1,
-            )[0]
-
-            current_logan_dir = (
-                output_dir / "logan" / attack_type / dataset / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_logan_dir)
-
-            np.savetxt(
-                current_logan_dir / "prediction.csv",
-                pred_proba_logan,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_logan,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_logan_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
-        # TableGAN
-        if "TableGAN" in attack_model:
-            pred_proba_tablegan = tablegan.fit_pred(
-                df_train_tablegan_discriminator=df_train_tablegan_discriminator,
-                y_train_tablegan_discriminator=y_train_tablegan_discriminator,
-                df_train_tablegan_classifier=df_train_tablegan_classifier,
-                y_train_tablegan_classifier=y_train_tablegan_classifier,
-                df_test=df_test,
-                cont_cols=config.metadata["continuous"],
-                cat_cols=config.metadata["categorical"],
-                iteration=1,
-            )[0]
-
-            current_tablegan_dir = (
-                output_dir
-                / "tablegan"
-                / attack_type
-                / dataset
-                / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_tablegan_dir)
-
-            np.savetxt(
-                current_tablegan_dir / "prediction.csv",
-                pred_proba_tablegan,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_tablegan,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_tablegan_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
-        # DOMIAS
-        if "DOMIAS" in attack_model:
-            pred_proba_domias = domias.fit_pred(
-                df_ref=df_real_ref.astype(float),
-                df_synth=df_synth.astype(float),
-                df_test=df_test.astype(float),
-            )
-
-            current_domias_dir = (
-                output_dir / "domias" / attack_type / dataset / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_domias_dir)
-
-            np.savetxt(
-                current_domias_dir / "prediction.csv",
-                pred_proba_domias,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_domias,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_domias_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
-        # Soft voting
-        if "Soft Voting" in attack_model:
-            pred_proba_soft_voting = soft_voting.fit_pred(
-                df_train_logan=df_train_logan,
-                y_train_logan=y_train_logan,
-                df_train_tablegan_discriminator=df_train_tablegan_discriminator,
-                y_train_tablegan_discriminator=y_train_tablegan_discriminator,
-                df_train_tablegan_classifier=df_train_tablegan_classifier,
-                y_train_tablegan_classifier=y_train_tablegan_classifier,
-                df_ref=df_real_ref,
-                df_synth=df_synth,
-                df_test=df_test,
-                cont_cols=config.metadata["continuous"],
-                cat_cols=config.metadata["categorical"],
-                iteration=1,
-            )[0]
-
-            current_soft_voting_dir = (
-                output_dir
-                / "soft_voting"
-                / attack_type
-                / dataset
-                / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_soft_voting_dir)
-
-            np.savetxt(
-                current_soft_voting_dir / "prediction.csv",
-                pred_proba_soft_voting,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_soft_voting,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_soft_voting_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
-        # Stacking
-        if "Stacking" in attack_model:
-            output_stacking = stacking.fit_pred(
-                df_train_logan=df_train_logan,
-                y_train_logan=y_train_logan,
-                df_train_tablegan_discriminator=df_train_tablegan_discriminator,
-                y_train_tablegan_discriminator=y_train_tablegan_discriminator,
-                df_train_tablegan_classifier=df_train_tablegan_classifier,
-                y_train_tablegan_classifier=y_train_tablegan_classifier,
-                df_ref=df_real_ref,
-                df_synth=df_synth,
-                df_test=df_test,
-                cont_cols=config.metadata["continuous"],
-                cat_cols=config.metadata["categorical"],
-                iteration=1,
-                meta_classifier=meta_classifier_stacking,
-            )
-
-            pred_proba_stacking = output_stacking["pred_proba"][0]
-
-            current_stacking_dir = (
-                output_dir
-                / "stacking"
-                / attack_type
-                / dataset
-                / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_stacking_dir)
-
-            np.savetxt(
-                current_stacking_dir / "prediction.csv",
-                pred_proba_stacking,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_stacking,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_stacking_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
-        # Stacking+
-        if "Stacking+" in attack_model:
-            output_stacking_plus = stacking_plus.fit_pred(
-                df_synth_train=df_synth_train,
-                df_synth_test=df_synth_test,
-                df_train_logan=df_train_logan,
-                y_train_logan=y_train_logan,
-                df_train_tablegan_discriminator=df_train_tablegan_discriminator,
-                y_train_tablegan_discriminator=y_train_tablegan_discriminator,
-                df_train_tablegan_classifier=df_train_tablegan_classifier,
-                y_train_tablegan_classifier=y_train_tablegan_classifier,
-                df_ref=df_real_ref,
-                df_test=df_test,
-                cont_cols=config.metadata["continuous"],
-                cat_cols=config.metadata["categorical"],
-                iteration=1,
-                meta_classifier=meta_classifier_stacking_plus,
-            )
-
-            pred_proba_stacking_plus = output_stacking_plus["pred_proba"][0]
-
-            current_stacking_plus_dir = (
-                output_dir
-                / "stacking_plus"
-                / attack_type
-                / dataset
-                / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_stacking_plus_dir)
-
-            np.savetxt(
-                current_stacking_plus_dir / "prediction.csv",
-                pred_proba_stacking_plus,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_stacking_plus,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_stacking_plus_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
-        # Blending
-        if "Blending" in attack_model:
-            output_blending = blending.fit_pred(
-                df_train_logan=df_train_logan,
-                y_train_logan=y_train_logan,
-                df_train_tablegan_discriminator=df_train_tablegan_discriminator,
-                y_train_tablegan_discriminator=y_train_tablegan_discriminator,
-                df_train_tablegan_classifier=df_train_tablegan_classifier,
-                y_train_tablegan_classifier=y_train_tablegan_classifier,
-                df_ref=df_real_ref,
-                df_synth=df_synth,
-                df_test=df_test,
-                cont_cols=config.metadata["continuous"],
-                cat_cols=config.metadata["categorical"],
-                iteration=1,
-                meta_classifier=meta_classifier_blending,
-            )
-
-            pred_proba_blending = output_blending["pred_proba"][0]
-
-            current_blending_dir = (
-                output_dir
-                / "blending"
-                / attack_type
-                / dataset
-                / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_blending_dir)
-
-            np.savetxt(
-                current_blending_dir / "prediction.csv",
-                pred_proba_blending,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_blending,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_blending_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
-        # Blending+
-        if "Blending+" in attack_model:
-            output_blending_plus = blending_plus.fit_pred(
-                df_synth_train=df_synth_train,
-                df_synth_test=df_synth_test,
-                df_train_logan=df_train_logan,
-                y_train_logan=y_train_logan,
-                df_train_tablegan_discriminator=df_train_tablegan_discriminator,
-                y_train_tablegan_discriminator=y_train_tablegan_discriminator,
-                df_train_tablegan_classifier=df_train_tablegan_classifier,
-                y_train_tablegan_classifier=y_train_tablegan_classifier,
-                df_ref=df_real_ref,
-                df_test=df_test,
-                cont_cols=config.metadata["continuous"],
-                cat_cols=config.metadata["categorical"],
-                iteration=1,
-                meta_classifier=meta_classifier_blending_plus,
-            )
-
-            pred_proba_blending_plus = output_blending_plus["pred_proba"][0]
-
-            current_blending_plus_dir = (
-                output_dir
-                / "blending_plus"
-                / attack_type
-                / dataset
-                / f"{gen_name}_{data_id}"
-            )
-            standard.create_directory(current_blending_plus_dir)
-
-            np.savetxt(
-                current_blending_plus_dir / "prediction.csv",
-                pred_proba_blending_plus,
-                delimiter=",",
-            )
-
-            if is_plot:
-                draw.plot_pred(
-                    df_test=df_test,
-                    y_pred_proba=pred_proba_blending_plus,
-                    cont_col=config.metadata["continuous"],
-                    n=50,
-                    save_path=current_blending_plus_dir / "plot_pred.jpg",
-                    mode="infer",
-                    seed=config.seed,
-                )
-
         # Blending++
         if "Blending++" in attack_model:
             output_blending_plus_plus = blending_plus_plus.fit_pred(
-                df_synth_train=df_synth_train,
-                df_synth_test=df_synth_test,
-                df_train_logan=df_train_logan,
-                y_train_logan=y_train_logan,
-                df_train_tablegan_discriminator=df_train_tablegan_discriminator,
-                y_train_tablegan_discriminator=y_train_tablegan_discriminator,
-                df_train_tablegan_classifier=df_train_tablegan_classifier,
-                y_train_tablegan_classifier=y_train_tablegan_classifier,
+                df_synth=df_synth,
                 df_ref=df_real_ref,
                 df_test=df_test,
-                cont_cols=config.metadata["continuous"],
+                test_pred_proba_rmia=df_rmia_pred,
                 cat_cols=config.metadata["categorical"],
                 iteration=1,
                 meta_classifier=meta_classifier_blending_plus_plus,
@@ -560,34 +159,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--meta_classifier_stacking_path",
-        default=None,
-        type=str,
-        help="Full path of the trained meta classifier for stacking model",
-    )
-
-    parser.add_argument(
-        "--meta_classifier_stacking_plus_path",
-        default=None,
-        type=str,
-        help="Full path of the trained meta classifier for stacking+ model",
-    )
-
-    parser.add_argument(
-        "--meta_classifier_blending_path",
-        default=None,
-        type=str,
-        help="Full path of the trained meta classifier for blending model",
-    )
-
-    parser.add_argument(
-        "--meta_classifier_blending_plus_path",
-        default=None,
-        type=str,
-        help="Full path of the trained meta classifier for blending+ model",
-    )
-
-    parser.add_argument(
         "--meta_classifier_blending_plus_plus_path",
         default=None,
         type=str,
@@ -613,10 +184,6 @@ if __name__ == "__main__":
         attack_model=args.attack_model,
         attack_type=args.attack_type,
         real_ref_path=args.real_ref_path,
-        meta_classifier_stacking_path=args.meta_classifier_stacking_path,
-        meta_classifier_stacking_plus_path=args.meta_classifier_stacking_plus_path,
-        meta_classifier_blending_path=args.meta_classifier_blending_path,
-        meta_classifier_blending_plus_path=args.meta_classifier_blending_plus_path,
         meta_classifier_blending_plus_plus_path=args.meta_classifier_blending_plus_plus_path,
         dataset=args.dataset,
         is_plot=args.is_plot,
