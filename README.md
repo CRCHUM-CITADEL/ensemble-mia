@@ -19,8 +19,8 @@ The meta-classifier takes the following inputs:
 The meta-classifier outputs the probability that each data point is member of the dataset used to generate 
 the synthetic data.
 
-Note: the RMIA model needs to be trained separately and its predictions (i.e., for dev and final) should be
-saved as **.csv** files and be placed in the corresponding folder (see **Usage** for more detail).
+Note: the RMIA attack requires the separate training of shadow models. 
+More details are available in the RMIA notebook and scripts.
 
 ## Usage
 
@@ -31,11 +31,8 @@ saved as **.csv** files and be placed in the corresponding folder (see **Usage**
 (refer to `1.real_data_processing.ipynb` for details). This step is required for the DOMIAS model.
 Note: we have already collected the population data and saved it in the intput folder.
 
-3.**Prepare** the training data to train the meta-classifier and **train** RMIA model: 
-generate the training set to train the meta-classifier. Train a RMIA model and generate predictions 
-for the training set used to train the meta-classifier as well as for the challenge points in the
-**train**, **dev** and **final** folders (refer to notebook `2.rmia.ipynb` for details). 
-The predictions should be saved in the corresponding folder.
+3.**Prepare** the training data to train the meta-classifier: 
+generate the training set to train the meta-classifier.
 
 The intput folder should have the following structure and the files should have the
 same naming convention:
@@ -72,9 +69,9 @@ same naming convention:
         └── population_all_with_challenge_no_id.csv
 ```
 
-Note: We have generated the training set to train the meta-classifier and trained a RMIA model and generated 
+Note: We have generated the training set to train the meta-classifier and computed RMIA scores and generated 
 predictions and placed the **.csv** files in the **input** folder. You can skip this step and use the provided data, 
-if you do not want to use the generated the training set and the predictions from the trained RMIA model.
+if you do not want to use the generated training set and RMIA scores.
 
 4.**Train** the meta-classifier: train the meta classifier of the ensemble models and save the trained meta classifier.
 Note: We have added a trained XGBoost meta-classifiers in the **output** folder. 
