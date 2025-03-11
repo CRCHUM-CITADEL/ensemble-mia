@@ -1,6 +1,6 @@
 # Ensemble membership inference attack model
 
-![Training Pipeline.jpg](temp_file/Training%20Pipeline.jpg)
+
 
 ## Overview
 
