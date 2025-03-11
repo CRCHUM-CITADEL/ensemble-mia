@@ -119,7 +119,7 @@ python infer.py \
 ```
 
 7.**Generate** the .zip file: create the .zip file for submission 
-(refer to refer notebook `3.prepare_submmission.ipynb` for details)
+(refer to notebook `3.prepare_submmission.ipynb` for details)
 
 ## Requirements
 
