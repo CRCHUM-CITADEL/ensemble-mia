@@ -75,17 +75,15 @@ if __name__ == "__main__":
                     gower_matrix_shadow.append(pairwise_gower)
 
                     # Keep only the k smallest distances for each challenge point (first column is 0 for the within real/synth)
-                    #dist = np.sort(pairwise_gower, axis=1)[:, 0:k]
-                    #mean_dist = np.mean(dist, axis=1)
+                    # dist = np.sort(pairwise_gower, axis=1)[:, 0:k]
+                    # mean_dist = np.mean(dist, axis=1)
                     mean_dist = np.min(pairwise_gower, axis=1)
 
                     mean_dist_shadow.append(mean_dist)
 
                 # Save array
-                file_name = 'gower_matrix_shadow_2_top_' + str(k) + '.pkl'
-                with open(
-                    os.path.join(folder_path, file_name), "wb"
-                ) as file:
+                file_name = "gower_matrix_shadow_2_top_" + str(k) + ".pkl"
+                with open(os.path.join(folder_path, file_name), "wb") as file:
                     pickle.dump(
                         {
                             "gower_matrix": gower_matrix_shadow,

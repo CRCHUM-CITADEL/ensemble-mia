@@ -77,8 +77,15 @@ def train_tabddpm(
     configs,
     save_dir,
 ):
-    material = {"tables": {}, "relation_order": {}, "save_dir": save_dir, "all_group_lengths_prob_dicts": {},
-                "models": {}, "configs": configs, "synth_data": {}}
+    material = {
+        "tables": {},
+        "relation_order": {},
+        "save_dir": save_dir,
+        "all_group_lengths_prob_dicts": {},
+        "models": {},
+        "configs": configs,
+        "synth_data": {},
+    }
 
     # Load tables
     tables, relation_order, dataset_meta = load_multi_table(
@@ -126,8 +133,15 @@ def fine_tune_tabddpm(
     new_classifier_iterations=10,
     n_synth=20000,
 ):
-    material = {"tables": {}, "relation_order": {}, "save_dir": save_dir, "all_group_lengths_prob_dicts": {},
-                "models": {}, "configs": configs, "synth_data": {}}
+    material = {
+        "tables": {},
+        "relation_order": {},
+        "save_dir": save_dir,
+        "all_group_lengths_prob_dicts": {},
+        "models": {},
+        "configs": configs,
+        "synth_data": {},
+    }
 
     # Load tables
     new_tables, relation_order, dataset_meta = load_multi_table(
