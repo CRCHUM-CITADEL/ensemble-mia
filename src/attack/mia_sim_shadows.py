@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 import pandas as pd
 
-import clover.utils.external.gower.gower_dist as gower
+import src.utils.external.gower.gower_dist as gower
 
 # For all challenge sets, compute the gower distance matrix and membership signals wrt the provided synthetic dataset
 

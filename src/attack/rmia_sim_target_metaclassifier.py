@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 
-import clover.utils.external.gower.gower_dist as gower
+import src.utils.external.gower.gower_dist as gower
 
 # Compute the gower distance matrix and membership signals wrt the provided synthetic dataset
 
