@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("/data8/projets/dev_synthetic_data/code/lherbault/github_ensemble_mia")
 
 # Local
@@ -13,15 +14,15 @@ import random
 # 3rd party
 import pandas as pd
 
-json_file_path = '/data8/projets/dev_synthetic_data/code/lherbault/github_ensemble_mia/configs/trans.json'
-trans_domain_file_path = '/data8/projets/dev_synthetic_data/data/MIDST_open/tabddpm_black_box/train/tabddpm_1/trans_domain.json'
-dataset_meta_file_path = '/data8/projets/dev_synthetic_data/data/MIDST_open/tabddpm_black_box/train/tabddpm_1/dataset_meta.json'
+json_file_path = "/data8/projets/dev_synthetic_data/code/lherbault/github_ensemble_mia/configs/trans.json"
+trans_domain_file_path = "/data8/projets/dev_synthetic_data/data/MIDST_open/tabddpm_black_box/train/tabddpm_1/trans_domain.json"
+dataset_meta_file_path = "/data8/projets/dev_synthetic_data/data/MIDST_open/tabddpm_black_box/train/tabddpm_1/dataset_meta.json"
 
-train_pop_file_path = '/data8/projets/dev_synthetic_data/data/MIDST_open/tabddpm_black_box/population/all/real_all.csv'
+train_pop_file_path = "/data8/projets/dev_synthetic_data/data/MIDST_open/tabddpm_black_box/population/all/real_all.csv"
 
 
-n_reps = 12 # number of repetitions for each challenge point in the fine-tuning set
-n_models = 8 # number of shadow models to train, must be even
+n_reps = 12  # number of repetitions for each challenge point in the fine-tuning set
+n_models = 8  # number of shadow models to train, must be even
 
 metadata = {
     "continuous": ["trans_date", "amount", "balance", "bank"],
@@ -29,9 +30,13 @@ metadata = {
     "variable_to_predict": "trans_type",
 }
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Attack parser.")
-    parser.add_argument("challenge_points_repo", type=str, help="Path to the repo of all challenge csvs.")
+    parser.add_argument(
+        "challenge_points_repo",
+        type=str,
+        help="Path to the repo of all challenge csvs.",
+    )
 
     args = parser.parse_args()
 
@@ -55,7 +60,7 @@ if __name__ == '__main__':
     master_challenge_df = pd.concat(dfs, ignore_index=True).drop_duplicates()
 
     # 2. Extract unique trans_id values
-    unique_ids = master_challenge_df['trans_id'].unique().tolist()
+    unique_ids = master_challenge_df["trans_id"].unique().tolist()
 
     # create the random lists, each with half the size of unique_ids
     random.shuffle(unique_ids)  # Shuffle to randomize order
@@ -65,69 +70,63 @@ if __name__ == '__main__':
 
     # Assign each unique_id to half of the random lists
     for uid in unique_ids:
-        selected_lists = random.sample(range(n_models), half_models)  # Select 2 random list indices
+        selected_lists = random.sample(
+            range(n_models), half_models
+        )  # Select 2 random list indices
         for idx in selected_lists:
             lists[idx].append(uid)
 
-    attack_data = {'selected_sets': lists,
-                   'trained_results': []}
+    attack_data = {"selected_sets": lists, "trained_results": []}
 
-    i=0
+    i = 0
 
     for i, ref_list in enumerate(lists):
         i += 1
-        print('Reference model number ', i)
+        print("Reference model number ", i)
 
         # Create the necessary folders and config files
-        folder_name = 'shadow_model_rmia_' + str(i)
+        folder_name = "shadow_model_rmia_" + str(i)
         new_folder = os.path.join(data_dir, folder_name)
         # create the new folder if it doesn't exist
         if not os.path.exists(new_folder):
             os.makedirs(new_folder)
-        shutil.copyfile(trans_domain_file_path, os.path.join(new_folder, 'trans_domain.json'))
-        shutil.copyfile(dataset_meta_file_path, os.path.join(new_folder, 'dataset_meta.json'))
+        shutil.copyfile(
+            trans_domain_file_path, os.path.join(new_folder, "trans_domain.json")
+        )
+        shutil.copyfile(
+            dataset_meta_file_path, os.path.join(new_folder, "dataset_meta.json")
+        )
         configs, save_dir = config_tabddpm(
             data_dir=new_folder,
             json_path=json_file_path,
-            final_json_path=os.path.join(data_dir, 'trans.json'),
-            diffusion_layers=[
-                512,
-                1024,
-                1024,
-                1024,
-                1024,
-                512
-            ],
+            final_json_path=os.path.join(data_dir, "trans.json"),
+            diffusion_layers=[512, 1024, 1024, 1024, 1024, 512],
             diffusion_iterations=200000,
-            classifier_layers=[
-                128,
-                256,
-                512,
-                1024,
-                512,
-                256,
-                128
-            ],
+            classifier_layers=[128, 256, 512, 1024, 512, 256, 128],
             classifier_dim_t=128,
             classifier_iterations=20000,
         )
 
-        selected_challenges = master_challenge_df[master_challenge_df['trans_id'].isin(ref_list)]
-        print('Number of selected challenges to train the shadow model: ', len(selected_challenges))
+        selected_challenges = master_challenge_df[
+            master_challenge_df["trans_id"].isin(ref_list)
+        ]
+        print(
+            "Number of selected challenges to train the shadow model: ",
+            len(selected_challenges),
+        )
         # Repeat each row n_reps times
-        selected_challenges = pd.concat([selected_challenges] * n_reps, ignore_index=True)
+        selected_challenges = pd.concat(
+            [selected_challenges] * n_reps, ignore_index=True
+        )
         # Shuffle the dataset
-        selected_challenges = selected_challenges.sample(frac=1, random_state=42).reset_index(drop=True)
+        selected_challenges = selected_challenges.sample(
+            frac=1, random_state=42
+        ).reset_index(drop=True)
 
         train_result = train_tabddpm(selected_challenges, configs, save_dir)
 
-        attack_data['trained_results'].append(train_result)
+        attack_data["trained_results"].append(train_result)
 
     # Pickle dump the results
-    with open(os.path.join(data_dir, 'rmia_shadows_m8.pkl'), 'wb') as file:
+    with open(os.path.join(data_dir, "rmia_shadows_m8.pkl"), "wb") as file:
         pickle.dump(attack_data, file)
-
-
-
-
-

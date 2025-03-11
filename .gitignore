@@ -1,0 +1,16 @@
+.env
+.idea
+Note.txt
+**/.ipynb_checkpoints/*
+**/__pycache__/*
+**/temp_file/*
+**/externals/MIDSTModels/*
+#**/data/*
+#**.csv
+#**.png
+#**.jpg
+# **.pkl
+**.hdf
+.nfs*
+**Untitled.ipynb
+
