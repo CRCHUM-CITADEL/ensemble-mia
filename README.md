@@ -2,7 +2,7 @@
 
 ## Overview
 
-- **Description:** This GitHub repository includes Python scripts designed to perform membership inference attacks 
+**Description:** This GitHub repository includes Python scripts designed to perform membership inference attacks 
 using ensemble technique.
 
 The meta-classifier takes the following inputs:
@@ -27,6 +27,7 @@ saved as **.csv** files and be placed in the corresponding folder (see **Usage**
 
 2.**Collect** the population data and save it as **.csv** file, i.e., in the intput folder 
 (refer to `1.real_data_processing.ipynb` for details). This step is required for the DOMIAS model.
+Note: we have already collected the population data and saved it in the intput folder.
 
 3.**Prepare** the training data to train the meta-classifier and **train** RMIA model: 
 generate the training set to train the meta-classifier. Train a RMIA model and generate predictions 
@@ -74,7 +75,7 @@ predictions and placed the **.csv** files in the **input** folder. You can skip 
 if you do not want to use the generated the training set and the predictions from the trained RMIA model.
 
 4.**Train** the meta-classifier: train the meta classifier of the ensemble models and save the trained meta classifier.
-Note: We have added the trained XGBoost meta-classifiers in the **output** folder. 
+Note: We have added a trained XGBoost meta-classifiers in the **output** folder. 
 You can skip this step and use the provided meta-classifier, if you do not want to train your own.
 
 ```
@@ -92,7 +93,7 @@ python train.py \
 --output_path ../output/train/tabddpm_black_box
 ```
 
-4.**Evaluate** the ensemble model: evaluate the ensemble model with all the datasets in **train**.
+5.**Evaluate** the ensemble model: evaluate the ensemble model with all the datasets in **train**.
 
 ```
 python eval.py \
@@ -102,7 +103,7 @@ python eval.py \
 --meta_classifier_blending_plus_plus_path ../output/train/tabddpm_black_box/blending_plus_plus/meta_classifier.pkl
 ```
 
-5.**Predict** with the ensemble model: make predictions using the ensemble model on all the datasets 
+6.**Predict** with the ensemble model: make predictions using the ensemble model on all the datasets 
 in **dev** and **final** (pass dev or final as argument for `--dataset`).
 
 ```
@@ -115,7 +116,7 @@ python infer.py \
 --is_plot False
 ```
 
-6.**Generate** the .zip file: create the .zip file for submission 
+7.**Generate** the .zip file: create the .zip file for submission 
 (refer to refer notebook `3.prepare_submmission.ipynb` for details)
 
 ## Requirements
