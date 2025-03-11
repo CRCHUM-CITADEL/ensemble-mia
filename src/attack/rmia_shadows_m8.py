@@ -2,7 +2,7 @@ import sys
 sys.path.append("/data8/projets/dev_synthetic_data/code/lherbault/github_ensemble_mia")
 
 # Local
-from distinguishability_attack_fn import *
+from tabddpm_attack_fn import *
 
 import os
 import shutil
