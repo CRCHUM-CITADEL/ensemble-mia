@@ -1,5 +1,7 @@
 # Ensemble membership inference attack model
 
+![Training Pipeline.jpg](temp_file/Training%20Pipeline.jpg)
+
 ## Overview
 
 **Description:** This GitHub repository includes Python scripts designed to perform membership inference attacks 
@@ -32,7 +34,7 @@ Note: we have already collected the population data and saved it in the intput f
 3.**Prepare** the training data to train the meta-classifier and **train** RMIA model: 
 generate the training set to train the meta-classifier. Train a RMIA model and generate predictions 
 for the training set used to train the meta-classifier as well as for the challenge points in the
-**train**, **dev** and **final** folders (refer to notebook `2.XXXXX.ipynb` for details). 
+**train**, **dev** and **final** folders (refer to notebook `2.rmia.ipynb` for details). 
 The predictions should be saved in the corresponding folder.
 
 The intput folder should have the following structure and the files should have the
